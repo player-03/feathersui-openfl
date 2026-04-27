@@ -2409,18 +2409,7 @@ class TreeGridView extends BaseScrollContainer implements IDataSelector<Dynamic>
 			}
 		}
 
-		if (this._typicalRowRenderer != newTypicalRowRenderer) {
-			if (this._typicalRowRenderer != null) {
-				// it may have been hidden if it was out of the view port bounds
-				this._typicalRowRenderer.visible = true;
-			}
-			this._typicalRowRenderer = newTypicalRowRenderer;
-
-			if ((this.layout is ITypicalItemLayout)) {
-				var typicalItemLayout:ITypicalItemLayout = cast this.layout;
-				typicalItemLayout.typicalItem = this._typicalRowRenderer;
-			}
-		}
+		this.setTypicalRowRendererInternal(newTypicalRowRenderer);
 
 		if (this._typicalRowRenderer != null) {
 			// this renderer is already is use by the typical item, so we
@@ -2432,6 +2421,22 @@ class TreeGridView extends BaseScrollContainer implements IDataSelector<Dynamic>
 			if (this.activeRowRenderers.length == 0) {
 				this.activeRowRenderers.push(this._typicalRowRenderer);
 			}
+		}
+	}
+
+	private function setTypicalRowRendererInternal(newTypicalRowRenderer:TreeGridViewRowRenderer):Void {
+		if (this._typicalRowRenderer == newTypicalRowRenderer) {
+			return;
+		}
+		if (this._typicalRowRenderer != null) {
+			// it may have been hidden if it was out of the view port bounds
+			this._typicalRowRenderer.visible = true;
+		}
+		this._typicalRowRenderer = newTypicalRowRenderer;
+
+		if ((this.layout is ITypicalItemLayout)) {
+			var typicalItemLayout:ITypicalItemLayout = cast this.layout;
+			typicalItemLayout.typicalItem = this._typicalRowRenderer;
 		}
 	}
 
@@ -3219,6 +3224,12 @@ class TreeGridView extends BaseScrollContainer implements IDataSelector<Dynamic>
 				this.resetRowRenderer(rowRenderer, state);
 				if (this._rowRendererMeasurements != null) {
 					this._rowRendererMeasurements.restore(rowRenderer);
+				}
+				if ((this.layout is ITypicalItemLayout)) {
+					var typicalItemLayout:ITypicalItemLayout = cast this.layout;
+					if (rowRenderer == typicalItemLayout.typicalItem) {
+						this.setTypicalRowRendererInternal(null);
+					}
 				}
 				// ensures that the change is detected when we validate later
 				state.owner = null;

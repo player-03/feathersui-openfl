@@ -1824,18 +1824,7 @@ class ListView extends BaseScrollContainer implements IIndexSelector implements 
 			}
 		}
 
-		if (this._typicalItemRenderer != newTypicalItemRenderer) {
-			if (this._typicalItemRenderer != null) {
-				// it may have been hidden if it was out of the view port bounds
-				this._typicalItemRenderer.visible = true;
-			}
-			this._typicalItemRenderer = newTypicalItemRenderer;
-
-			if ((this.layout is ITypicalItemLayout)) {
-				var typicalItemLayout:ITypicalItemLayout = cast this.layout;
-				typicalItemLayout.typicalItem = this._typicalItemRenderer;
-			}
-		}
+		this.setTypicalItemRendererInternal(newTypicalItemRenderer);
 
 		if (this._typicalItemRenderer != null) {
 			var inactiveItemRenderers = newTypicalItemStorage.inactiveItemRenderers;
@@ -1849,6 +1838,22 @@ class ListView extends BaseScrollContainer implements IIndexSelector implements 
 			if (activeItemRenderers.length == 0) {
 				activeItemRenderers.push(this._typicalItemRenderer);
 			}
+		}
+	}
+
+	private function setTypicalItemRendererInternal(newTypicalItemRenderer:DisplayObject):Void {
+		if (this._typicalItemRenderer == newTypicalItemRenderer) {
+			return;
+		}
+		if (this._typicalItemRenderer != null) {
+			// it may have been hidden if it was out of the view port bounds
+			this._typicalItemRenderer.visible = true;
+		}
+		this._typicalItemRenderer = newTypicalItemRenderer;
+
+		if ((this.layout is ITypicalItemLayout)) {
+			var typicalItemLayout:ITypicalItemLayout = cast this.layout;
+			typicalItemLayout.typicalItem = this._typicalItemRenderer;
 		}
 	}
 
@@ -2518,6 +2523,12 @@ class ListView extends BaseScrollContainer implements IIndexSelector implements 
 		this.resetItemRenderer(itemRenderer, state, storage);
 		if (storage.measurements != null) {
 			storage.measurements.restore(itemRenderer);
+		}
+		if ((this.layout is ITypicalItemLayout)) {
+			var typicalItemLayout:ITypicalItemLayout = cast this.layout;
+			if (itemRenderer == typicalItemLayout.typicalItem) {
+				this.setTypicalItemRendererInternal(null);
+			}
 		}
 		// ensures that the change is detected when we validate later
 		state.owner = null;
