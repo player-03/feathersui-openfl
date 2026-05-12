@@ -26,16 +26,16 @@ import openfl.events.EventDispatcher;
 	@event openfl.events.Event.CHANGE Dispatched when a property of the layout
 	changes, which triggers the container to invalidate.
 
-	@see [Tutorial: How to use FlowRowsLayout with layout containers](https://feathersui.com/learn/haxe-openfl/flow-rows-layout/)
+	@see [Tutorial: How to use FlowColumnsLayout with layout containers](https://feathersui.com/learn/haxe-openfl/flow-columns-layout/)
 
-	@since 1.0.0
+	@since 1.4.0
 **/
 @:event(openfl.events.Event.CHANGE)
 class FlowColumnsLayout extends EventDispatcher implements ILayout {
 	/**
 		Creates a new `FlowColumnsLayout` object.
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	public function new() {
 		super();
@@ -55,7 +55,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 
 		@default 0.0
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var paddingTop(get, set):Float;
@@ -87,7 +87,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 
 		@default 0.0
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var paddingRight(get, set):Float;
@@ -119,7 +119,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 
 		@default 0.0
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var paddingBottom(get, set):Float;
@@ -151,7 +151,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 
 		@default 0.0
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var paddingLeft(get, set):Float;
@@ -183,7 +183,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 
 		@default 0.0
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var horizontalGap(get, set):Float;
@@ -215,7 +215,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 
 		@default 0.0
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var verticalGap(get, set):Float;
@@ -256,7 +256,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 		@see `feathers.layout.HorizontalAlign.CENTER`
 		@see `feathers.layout.HorizontalAlign.RIGHT`
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var horizontalAlign(get, set):HorizontalAlign;
@@ -295,7 +295,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 		@see `feathers.layout.VerticalAlign.MIDDLE`
 		@see `feathers.layout.VerticalAlign.BOTTOM`
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var verticalAlign(get, set):VerticalAlign;
@@ -333,7 +333,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 		@see `feathers.layout.HorizontalAlign.JUSTIFY`
 		@see `FlowColumnsLayout.justifyResetEnabled`
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var columnHorizontalAlign(get, set):HorizontalAlign;
@@ -359,7 +359,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 
 		@see `FlowColumnsLayout.columnHorizontalAlign`
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	@:bindable("change")
 	public var justifyResetEnabled(get, set):Bool;
@@ -385,7 +385,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 		@see `FlowColumnsLayout.paddingBottom`
 		@see `FlowColumnsLayout.paddingLeft`
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	public function setPadding(value:Float):Void {
 		this.paddingTop = value;
@@ -400,7 +400,7 @@ class FlowColumnsLayout extends EventDispatcher implements ILayout {
 		@see `FlowColumnsLayout.horizontalGap`
 		@see `FlowColumnsLayout.verticalGap`
 
-		@since 1.0.0
+		@since 1.4.0
 	**/
 	public function setGap(value:Float):Void {
 		this.horizontalGap = value;
