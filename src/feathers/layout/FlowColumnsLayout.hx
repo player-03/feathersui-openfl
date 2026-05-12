@@ -17,10 +17,11 @@ import openfl.events.Event;
 import openfl.events.EventDispatcher;
 
 /**
-	Positions items of different dimensions from left to right in multiple rows.
-	When the width of a row reaches the width of the container, a new row will
-	be started. Constrained to the suggested width, the content's total height
-	will change as the number of items increases or decreases.
+	Positions items of different dimensions from top to bottom in multiple
+	columns. When the height of a column reaches the height of the container, a
+	new column will be started. Constrained to the suggested height, the
+	content's total width will change as the number of items increases or
+	decreases.
 
 	@event openfl.events.Event.CHANGE Dispatched when a property of the layout
 	changes, which triggers the container to invalidate.
@@ -30,9 +31,9 @@ import openfl.events.EventDispatcher;
 	@since 1.0.0
 **/
 @:event(openfl.events.Event.CHANGE)
-class FlowRowsLayout extends EventDispatcher implements ILayout {
+class FlowColumnsLayout extends EventDispatcher implements ILayout {
 	/**
-		Creates a new `FlowRowsLayout` object.
+		Creates a new `FlowColumnsLayout` object.
 
 		@since 1.0.0
 	**/
@@ -235,13 +236,15 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 	private var _horizontalAlign:HorizontalAlign = LEFT;
 
 	/**
-		How each row is positioned horizontally (along the x-axis) within the
-		container.
+		How the content is positioned horizontally (along the x-axis) within the
+		container. If the total width of the content is larger than the
+		available width within the container, then the positioning of the items
+		will always start from the left.
 
-		**Note:** The `HorizontalAlign.JUSTIFY` constant is not supported by
-		this layout.
+		**Note:** The `HorizontalAlign.JUSTIFY` constant is not supported by this
+		layout.
 
-		The following example aligns each row's content to the right:
+		The following example aligns the container's content to the right:
 
 		```haxe
 		layout.horizontalAlign = RIGHT;
@@ -274,15 +277,13 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 	private var _verticalAlign:VerticalAlign = TOP;
 
 	/**
-		How the content is positioned vertically (along the y-axis) within the
-		container. If the total height of the content is larger than the
-		available height within the container, then the positioning of the items
-		will always start from the top.
+		How each column is positioned vertically (along the y-axis) within the
+		container.
 
-		**Note:** The `VerticalAlign.JUSTIFY` constant is not supported by this
-		layout.
+		**Note:** The `VerticalAlign.JUSTIFY` constant is not supported by
+		this layout.
 
-		The following example aligns the container's content to the bottom:
+		The following example aligns each column's content to the bottom:
 
 		```haxe
 		layout.verticalAlign = BOTTOM;
@@ -312,51 +313,51 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 		return this._verticalAlign;
 	}
 
-	private var _rowVerticalAlign:VerticalAlign = TOP;
+	private var _columnHorizontalAlign:HorizontalAlign = LEFT;
 
 	/**
-		How items in a row are positioned vertically (along the y-axis) within
-		that row.
+		How items in a column are positioned horizontally (along the x-axis) within
+		that column.
 
-		The following example aligns each row's content to the bottom:
+		The following example aligns each column's content to the right:
 
 		```haxe
-		layout.rowVerticalAlign = BOTTOM;
+		layout.columnHorizontalAlign = RIGHT;
 		```
 
-		@default feathers.layout.VerticalAlign.TOP
+		@default feathers.layout.HorizontalAlign.LEFT
 
-		@see `feathers.layout.VerticalAlign.TOP`
-		@see `feathers.layout.VerticalAlign.MIDDLE`
-		@see `feathers.layout.VerticalAlign.BOTTOM`
-		@see `feathers.layout.VerticalAlign.JUSTIFY`
-		@see `FlowRowsLayout.justifyResetEnabled`
+		@see `feathers.layout.HorizontalAlign.LEFT`
+		@see `feathers.layout.HorizontalAlign.CENTER`
+		@see `feathers.layout.HorizontalAlign.RIGHT`
+		@see `feathers.layout.HorizontalAlign.JUSTIFY`
+		@see `FlowColumnsLayout.justifyResetEnabled`
 
 		@since 1.0.0
 	**/
 	@:bindable("change")
-	public var rowVerticalAlign(get, set):VerticalAlign;
+	public var columnHorizontalAlign(get, set):HorizontalAlign;
 
-	private function get_rowVerticalAlign():VerticalAlign {
-		return this._rowVerticalAlign;
+	private function get_columnHorizontalAlign():HorizontalAlign {
+		return this._columnHorizontalAlign;
 	}
 
-	private function set_rowVerticalAlign(value:VerticalAlign):VerticalAlign {
-		if (this._rowVerticalAlign == value) {
-			return this._rowVerticalAlign;
+	private function set_columnHorizontalAlign(value:HorizontalAlign):HorizontalAlign {
+		if (this._columnHorizontalAlign == value) {
+			return this._columnHorizontalAlign;
 		}
-		this._rowVerticalAlign = value;
+		this._columnHorizontalAlign = value;
 		FeathersEvent.dispatch(this, Event.CHANGE);
-		return this._rowVerticalAlign;
+		return this._columnHorizontalAlign;
 	}
 
 	private var _justifyResetEnabled:Bool = false;
 
 	/**
-		Indicates if the height of items should be reset if the
-		`rowVerticalAlign` property is set to `VerticalAlign.JUSTIFY`.
+		Indicates if the width of items should be reset if the
+		`columnHorizontalAlign` property is set to `HorizontalAlign.JUSTIFY`.
 
-		@see `FlowRowsLayout.rowVerticalAlign`
+		@see `FlowColumnsLayout.columnHorizontalAlign`
 
 		@since 1.0.0
 	**/
@@ -379,10 +380,10 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 	/**
 		Sets all four padding properties to the same value.
 
-		@see `FlowRowsLayout.paddingTop`
-		@see `FlowRowsLayout.paddingRight`
-		@see `FlowRowsLayout.paddingBottom`
-		@see `FlowRowsLayout.paddingLeft`
+		@see `FlowColumnsLayout.paddingTop`
+		@see `FlowColumnsLayout.paddingRight`
+		@see `FlowColumnsLayout.paddingBottom`
+		@see `FlowColumnsLayout.paddingLeft`
 
 		@since 1.0.0
 	**/
@@ -396,8 +397,8 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 	/**
 		Sets both horizontal and vertical gap properties to the same value.
 
-		@see `FlowRowsLayout.horizontalGap`
-		@see `FlowRowsLayout.verticalGap`
+		@see `FlowColumnsLayout.horizontalGap`
+		@see `FlowColumnsLayout.verticalGap`
 
 		@since 1.0.0
 	**/
@@ -406,7 +407,7 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 		this.verticalGap = value;
 	}
 
-	private var _rowItems:Array<DisplayObject> = [];
+	private var _columnItems:Array<DisplayObject> = [];
 
 	/**
 		@see `feathers.layout.ILayout.layout()`
@@ -427,42 +428,42 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 
 		this.validateItems(items, measurements);
 
-		// let's figure out if we can show multiple rows
-		var supportsMultipleRows = true;
-		var availableRowWidth = measurements.width;
-		var needsWidth = availableRowWidth == null;
-		if (needsWidth) {
-			availableRowWidth = measurements.maxWidth;
-			if (availableRowWidth == null) {
-				availableRowWidth = 1.0 / 0.0; // Math.POSITIVE_INFINITY bug workaround for swf
+		// let's figure out if we can show multiple columns
+		var supportsMultipleColumns = true;
+		var availableColumnHeight = measurements.height;
+		var needsHeight = availableColumnHeight == null;
+		if (needsHeight) {
+			availableColumnHeight = measurements.maxHeight;
+			if (availableColumnHeight == null) {
+				availableColumnHeight = 1.0 / 0.0; // Math.POSITIVE_INFINITY bug workaround for swf
 			}
-			if (availableRowWidth == (1.0 / 0.0)) // Math.POSITIVE_INFINITY bug workaround for swf
+			if (availableColumnHeight == (1.0 / 0.0)) // Math.POSITIVE_INFINITY bug workaround for swf
 			{
-				supportsMultipleRows = false;
+				supportsMultipleColumns = false;
 			}
 		}
 
 		var i = 0;
 		var itemCount = items.length;
-		var positionY = this._paddingTop;
-		var maxRowWidth = 0.0;
-		var maxItemHeight = 0.0;
+		var positionX = this._paddingLeft;
+		var maxColumnHeight = 0.0;
+		var maxItemWidth = 0.0;
 		do {
 			if (i > 0) {
-				positionY += maxItemHeight + verticalGap;
+				positionX += maxItemWidth + horizontalGap;
 			}
 			// this section prepares some variables needed for the following loop
-			maxItemHeight = 0.0;
-			var positionX = this._paddingLeft;
-			// we save the items in this row to align them later.
+			maxItemWidth = 0.0;
+			var positionY = this._paddingTop;
+			// we save the items in this column to align them later.
 			#if (hl && haxe_ver < 4.3)
-			this._rowItems.splice(0, this._rowItems.length);
+			this._columnItems.splice(0, this._columnItems.length);
 			#else
-			this._rowItems.resize(0);
+			this._columnItems.resize(0);
 			#end
 
-			// this first loop sets the x position of items, and it calculates
-			// the total width of all items
+			// this first loop sets the y position of items, and it calculates
+			// the total height of all items
 			while (i < itemCount) {
 				var item = items[i];
 				if ((item is ILayoutObject) && !(cast item : ILayoutObject).includeInLayout) {
@@ -470,146 +471,146 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 				}
 				var itemWidth = item.width;
 				var itemHeight = item.height;
-				if (supportsMultipleRows
-					&& this._rowItems.length > 0
-					&& (positionX + itemWidth) > (availableRowWidth - this._paddingRight)) {
-					// we've reached the end of the row, so go to next
+				if (supportsMultipleColumns
+					&& this._columnItems.length > 0
+					&& (positionY + itemHeight) > (availableColumnHeight - this._paddingBottom)) {
+					// we've reached the end of the column, so go to next
 					break;
 				}
-				this._rowItems.push(item);
-				item.x = positionX;
-				positionX += itemWidth + this._horizontalGap;
+				this._columnItems.push(item);
+				item.y = positionY;
+				positionY += itemHeight + this._verticalGap;
 				// we compare with > instead of Math.max() because the rest
 				// arguments on Math.max() cause extra garbage collection and
 				// hurt performance
-				if (itemHeight > maxItemHeight) {
-					// we need to know the maximum height of the items in the
-					// case where the height of the view port needs to be
+				if (itemWidth > maxItemWidth) {
+					// we need to know the maximum width of the items in the
+					// case where the width of the view port needs to be
 					// calculated by the layout.
-					maxItemHeight = itemHeight;
+					maxItemWidth = itemWidth;
 				}
 				i++;
 			}
 
-			// this is the total width of all items in the row
-			var totalRowWidth = positionX - this._horizontalGap + this._paddingRight;
-			if (totalRowWidth > maxRowWidth) {
-				maxRowWidth = totalRowWidth;
+			// this is the total height of all items in the column
+			var totalColumnHeight = positionY - this._verticalGap + this._paddingBottom;
+			if (totalColumnHeight > maxColumnHeight) {
+				maxColumnHeight = totalColumnHeight;
 			}
 
-			if (supportsMultipleRows) {
-				// in this section, we handle horizontal alignment for the
-				// current row. however, we may need to adjust it later if
-				// the maxRowWidth is smaller than the availableRowWidth.
-				var horizontalAlignOffsetX = switch (this._horizontalAlign) {
-					case RIGHT: availableRowWidth - totalRowWidth;
-					case CENTER: (availableRowWidth - totalRowWidth) / 2.0;
-					case LEFT: 0.0;
+			if (supportsMultipleColumns) {
+				// in this section, we handle vertical alignment for the
+				// current column. however, we may need to adjust it later if
+				// the maxColumnHeight is smaller than the availableColumnHeight.
+				var verticalAlignOffsetY = switch (this._verticalAlign) {
+					case BOTTOM: availableColumnHeight - totalColumnHeight;
+					case MIDDLE: (availableColumnHeight - totalColumnHeight) / 2.0;
+					case TOP: 0.0;
 					default:
-						throw new ArgumentError("Unknown horizontal align: " + this._horizontalAlign);
+						throw new ArgumentError("Unknown vertical align: " + this._verticalAlign);
 				}
-				if (horizontalAlignOffsetX != 0.0) {
-					for (item in this._rowItems) {
+				if (verticalAlignOffsetY != 0.0) {
+					for (item in this._columnItems) {
 						if ((item is ILayoutObject) && !(cast item : ILayoutObject).includeInLayout) {
 							continue;
 						}
-						item.x += horizontalAlignOffsetX;
+						item.y += verticalAlignOffsetY;
 					}
 				}
 			}
 
-			for (item in this._rowItems) {
+			for (item in this._columnItems) {
 				if ((item is ILayoutObject) && !(cast item : ILayoutObject).includeInLayout) {
 					continue;
 				}
-				// handle all other vertical alignment values. the y position
+				// handle all other horizontal alignment values. the x position
 				// of all items is set here.
-				switch (this._rowVerticalAlign) {
+				switch (this._columnHorizontalAlign) {
 					case JUSTIFY:
-						item.y = positionY;
-						if (item.height != maxItemHeight) {
-							item.height = maxItemHeight;
+						item.x = positionX;
+						if (item.width != maxItemWidth) {
+							item.width = maxItemWidth;
 						}
-					case BOTTOM:
-						item.y = positionY + maxItemHeight - item.height;
-					case MIDDLE:
-						item.y = positionY + ((maxItemHeight - item.height) / 2.0);
-					case TOP:
-						item.y = positionY;
+					case RIGHT:
+						item.x = positionX + maxItemWidth - item.width;
+					case CENTER:
+						item.x = positionX + ((maxItemWidth - item.width) / 2.0);
+					case LEFT:
+						item.x = positionX;
 					default:
-						throw new ArgumentError("Unknown row vertical align: " + this._rowVerticalAlign);
+						throw new ArgumentError("Unknown column horizontal align: " + this._columnHorizontalAlign);
 				}
 			}
 		} while (i < itemCount);
 			// we don't want to keep a reference to any of the items, so clear
 			// this cache
 		#if (hl && haxe_ver < 4.3)
-		this._rowItems.splice(0, this._rowItems.length);
+		this._columnItems.splice(0, this._columnItems.length);
 		#else
-		this._rowItems.resize(0);
+		this._columnItems.resize(0);
 		#end
 
-		var contentRowWidth = maxRowWidth;
-		if (supportsMultipleRows && (needsWidth || measurements.width < maxRowWidth)) {
-			// if the maxRowWidth has changed since any row was aligned, the
-			// items in those rows may need to be shifted a bit
-			var contentRowWidth = maxRowWidth;
-			if (measurements.minWidth != null && contentRowWidth < measurements.minWidth) {
-				contentRowWidth = measurements.minWidth;
-			} else if (measurements.maxWidth != null && contentRowWidth > measurements.maxWidth) {
-				contentRowWidth = measurements.maxWidth;
+		var contentColumnHeight = maxColumnHeight;
+		if (supportsMultipleColumns && (needsHeight || measurements.height < maxColumnHeight)) {
+			// if the maxColumnHeight has changed since any column was aligned,
+			// the items in those columns may need to be shifted a bit
+			var contentColumnHeight = maxColumnHeight;
+			if (measurements.minHeight != null && contentColumnHeight < measurements.minHeight) {
+				contentColumnHeight = measurements.minHeight;
+			} else if (measurements.maxHeight != null && contentColumnHeight > measurements.maxHeight) {
+				contentColumnHeight = measurements.maxHeight;
 			}
-			var horizontalAlignOffsetX = switch (this._horizontalAlign) {
-				case RIGHT: availableRowWidth - contentRowWidth;
-				case CENTER: (availableRowWidth - contentRowWidth) / 2.0;
-				case LEFT: 0.0;
-				default:
-					throw new ArgumentError("Unknown horizontal align: " + this._horizontalAlign);
-			}
-			if (horizontalAlignOffsetX != 0.0) {
-				for (item in items) {
-					if ((item is ILayoutObject) && !(cast item : ILayoutObject).includeInLayout) {
-						continue;
-					}
-					// previously, we used the maxWidth for alignment,
-					// but the max row width may be smaller, so we need
-					// to account for the difference
-					item.x -= horizontalAlignOffsetX;
-				}
-			}
-		}
-		if (needsWidth) {
-			availableRowWidth = contentRowWidth;
-		}
-
-		var totalHeight = positionY + maxItemHeight + this._paddingBottom;
-		// the available height is the height of the viewport. if the explicit
-		// height is NaN, we need to calculate the viewport height ourselves
-		// based on the total height of all items.
-		var availableHeight = measurements.height;
-		if (availableHeight == null) {
-			availableHeight = totalHeight;
-			if (measurements.minHeight != null && availableHeight < measurements.minHeight) {
-				availableHeight = measurements.minHeight;
-			} else if (measurements.maxHeight != null && availableHeight > measurements.maxHeight) {
-				availableHeight = measurements.maxHeight;
-			}
-		}
-
-		if (totalHeight < availableHeight) {
-			var verticalAlignOffset = switch (this._verticalAlign) {
-				case BOTTOM: availableHeight - totalHeight;
-				case MIDDLE: (availableHeight - totalHeight) / 2.0;
+			var verticalAlignOffsetY = switch (this._verticalAlign) {
+				case BOTTOM: availableColumnHeight - contentColumnHeight;
+				case MIDDLE: (availableColumnHeight - contentColumnHeight) / 2.0;
 				case TOP: 0.0;
 				default:
 					throw new ArgumentError("Unknown vertical align: " + this._verticalAlign);
 			}
-			if (verticalAlignOffset != 0.0) {
+			if (verticalAlignOffsetY != 0.0) {
 				for (item in items) {
 					if ((item is ILayoutObject) && !(cast item : ILayoutObject).includeInLayout) {
 						continue;
 					}
-					item.y += verticalAlignOffset;
+					// previously, we used the maxHeight for alignment,
+					// but the max column height may be smaller, so we need
+					// to account for the difference
+					item.y -= verticalAlignOffsetY;
+				}
+			}
+		}
+		if (needsHeight) {
+			availableColumnHeight = contentColumnHeight;
+		}
+
+		var totalWidth = positionX + maxItemWidth + this._paddingRight;
+		// the available width is the width of the viewport. if the explicit
+		// width is NaN, we need to calculate the viewport width ourselves
+		// based on the total width of all items.
+		var availableWidth = measurements.width;
+		if (availableWidth == null) {
+			availableWidth = totalWidth;
+			if (measurements.minWidth != null && availableWidth < measurements.minWidth) {
+				availableWidth = measurements.minWidth;
+			} else if (measurements.maxWidth != null && availableWidth > measurements.maxWidth) {
+				availableWidth = measurements.maxWidth;
+			}
+		}
+
+		if (totalWidth < availableWidth) {
+			var horizontalAlignOffset = switch (this._horizontalAlign) {
+				case RIGHT: availableWidth - totalWidth;
+				case CENTER: (availableWidth - totalWidth) / 2.0;
+				case LEFT: 0.0;
+				default:
+					throw new ArgumentError("Unknown horizontal align: " + this._horizontalAlign);
+			}
+			if (horizontalAlignOffset != 0.0) {
+				for (item in items) {
+					if ((item is ILayoutObject) && !(cast item : ILayoutObject).includeInLayout) {
+						continue;
+					}
+					item.x += horizontalAlignOffset;
 				}
 			}
 		}
@@ -619,10 +620,10 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 		}
 		result.contentX = 0.0;
 		result.contentY = 0.0;
-		result.contentWidth = availableRowWidth;
-		result.contentHeight = totalHeight;
-		result.viewPortWidth = availableRowWidth;
-		result.viewPortHeight = availableHeight;
+		result.contentWidth = totalWidth;
+		result.contentHeight = availableColumnHeight;
+		result.viewPortWidth = availableWidth;
+		result.viewPortHeight = availableColumnHeight;
 		return result;
 	}
 
@@ -634,8 +635,8 @@ class FlowRowsLayout extends EventDispatcher implements ILayout {
 					continue;
 				}
 			}
-			if (this._rowVerticalAlign == JUSTIFY && this._justifyResetEnabled && (item is IMeasureObject)) {
-				(cast item : IMeasureObject).resetHeight();
+			if (this._columnHorizontalAlign == JUSTIFY && this._justifyResetEnabled && (item is IMeasureObject)) {
+				(cast item : IMeasureObject).resetWidth();
 			}
 			if ((item is IValidating)) {
 				(cast item : IValidating).validateNow();
