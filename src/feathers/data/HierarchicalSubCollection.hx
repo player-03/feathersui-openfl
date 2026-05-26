@@ -84,31 +84,6 @@ class HierarchicalSubCollection<T> extends EventDispatcher implements IHierarchi
 		parentCollection.addEventListener(HierarchicalCollectionEvent.UPDATE_ALL, hierarchicalSubCollection_parentCollection_updateAllHandler);
 	}
 
-	private var _itemToChildren:(T) -> Array<T>;
-
-	/**
-		A function that returns an item's children. If the item is not a branch,
-		the function should return `null`. If the item is a branch, but it
-		contains no children, the function should return an empty array.
-
-		@since 1.4.0
-	**/
-	public var itemToChildren(get, set):(T) -> Array<T>;
-
-	private function get_itemToChildren():(T) -> Array<T> {
-		return this._itemToChildren;
-	}
-
-	private function set_itemToChildren(value:(T) -> Array<T>):(T) -> Array<T> {
-		if (this._itemToChildren == value) {
-			return this._itemToChildren;
-		}
-		this._itemToChildren = value;
-		HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.RESET, null);
-		FeathersEvent.dispatch(this, Event.CHANGE);
-		return this._itemToChildren;
-	}
-
 	private var _filterFunction:(T) -> Bool = null;
 
 	/**
