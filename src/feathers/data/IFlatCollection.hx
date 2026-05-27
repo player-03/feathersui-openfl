@@ -75,6 +75,10 @@ interface IFlatCollection<T> extends IEventDispatcher {
 		included or excluded from visibility through APIs like `length` and
 		`get()`.
 
+		A `filterFunction` is non-destructive, meaning that it does not modify
+		the underlying data source. Removing the `filterFunction` will restore
+		any items that it excluded.
+
 		The following example filters a collection of strings by searching for
 		a substring at the beginning:
 
@@ -93,7 +97,11 @@ interface IFlatCollection<T> extends IEventDispatcher {
 
 	/**
 		A function to compare each item in the collection to determine the order
-		when sorted.
+		in which items appear when accessed through APIs like `get()`.
+
+		A `sortCompareFunction` is non-destructive, meaning that it does not
+		modify the underlying data source. Removing the `sortCompareFunction`
+		will restore the original order of the items.
 
 		The return value should be `-1` if the first item should appear before
 		the second item when the collection is sorted. The return value should

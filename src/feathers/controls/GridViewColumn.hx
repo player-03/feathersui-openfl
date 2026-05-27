@@ -121,9 +121,13 @@ class GridViewColumn extends EventDispatcher implements IGridViewColumn {
 	public var headerRendererRecycler:AbstractDisplayObjectRecycler<Dynamic, GridViewHeaderState, DisplayObject> = null;
 
 	/**
+		A function to compare each item in the collection to determine the order
+		in which items appear when accessed through collection APIs like
+		`get()`.
 
-		A function to compare each item in the collection to determine the
-		order when sorted.
+		A `sortCompareFunction` is non-destructive, meaning that it does not
+		modify the underlying data source. Removing the `sortCompareFunction`
+		will restore the original order of the items.
 
 		The return value should be `-1` if the first item should appear before
 		the second item when the collection is sorted. The return value should
