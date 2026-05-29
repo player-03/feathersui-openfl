@@ -259,8 +259,11 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 		if (this._filterAndSortData != null) {
 			var lastLocationIndex = location[location.length - 1];
 			var filteredOrSortedBranchChildren = this.findBranchChildren(this._filterAndSortData, this.filterAndSortDataItemToChildren, location);
-			var branchChildren = this.findBranchChildren(this._filterAndSortData, this.filterAndSortDataItemToChildren, location.slice(0, location.length - 1))
-				[location[location.length - 2]].originalChildren;
+			var branchChildren = this._array;
+			if (location.length >= 2) {
+				this.findBranchChildren(this._filterAndSortData, this.filterAndSortDataItemToChildren, location.slice(0, location.length - 1))
+					[location[location.length - 2]].originalChildren;
+			}
 			var oldItem:T = null;
 			var unfilteredLastLocationIndex = branchChildren.length;
 			if (lastLocationIndex < filteredOrSortedBranchChildren.length) {
