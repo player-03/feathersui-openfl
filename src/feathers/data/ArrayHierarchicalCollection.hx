@@ -258,8 +258,9 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 		}
 		if (this._filterAndSortData != null) {
 			var lastLocationIndex = location[location.length - 1];
-			var branchChildren = this.findBranchChildren(this._array, this._itemToChildren, location);
 			var filteredOrSortedBranchChildren = this.findBranchChildren(this._filterAndSortData, this.filterAndSortDataItemToChildren, location);
+			var branchChildren = this.findBranchChildren(this._filterAndSortData, this.filterAndSortDataItemToChildren, location.slice(0, location.length - 1))
+				[location[location.length - 2]].originalChildren;
 			var oldItem:T = null;
 			var unfilteredLastLocationIndex = branchChildren.length;
 			if (lastLocationIndex < filteredOrSortedBranchChildren.length) {
@@ -674,6 +675,7 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 			var children = (this._itemToChildren != null) ? this._itemToChildren(item) : null;
 			if (children != null) {
 				result.children = [];
+				result.originalChildren = children;
 				this.refreshFilterAndSortInternal(children, result.children);
 			}
 		}
@@ -706,11 +708,12 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 }
 
 private class FilterAndSortItem<T> {
-	public function new(item:T, ?children:Array<FilterAndSortItem<T>>) {
+	public function new(item:T, ?children:Array<FilterAndSortItem<T>>, ?originalChildren:Array<T>) {
 		this.item = item;
 		this.children = children;
 	}
 
 	public var item:T;
 	public var children:Array<FilterAndSortItem<T>>;
+	public var originalChildren:Array<T>;
 }
