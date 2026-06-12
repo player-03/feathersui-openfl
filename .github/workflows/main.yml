@@ -32,6 +32,7 @@ jobs:
     - name: Set up Haxelib dependencies
       run: |
         haxelib update haxelib --global
+        haxelib fixrepo
         haxelib install lime 7.8.0 --quiet
         haxelib install openfl 8.9.7 --quiet
         haxelib install actuate --quiet
@@ -57,6 +58,7 @@ jobs:
     - name: Set up Haxelib dependencies
       run: |
         haxelib update haxelib --global
+        haxelib fixrepo
         haxelib install lime 7.8.0 --quiet
         haxelib install openfl 8.9.7 --quiet
         haxelib install actuate --quiet
@@ -78,6 +80,7 @@ jobs:
     - name: Set up Haxelib dependencies
       run: |
         haxelib update haxelib --global
+        haxelib fixrepo
         haxelib install lime 7.8.0 --quiet
         haxelib install openfl 8.9.7 --quiet
         haxelib install actuate --quiet
