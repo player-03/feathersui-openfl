@@ -32,7 +32,7 @@ jobs:
   test-neko:
     strategy:
       matrix:
-        haxe-version: [4.2.5, 4.3.2]
+        haxe-version: [4.2.5, 4.3.7]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -56,7 +56,7 @@ jobs:
   test-hashlink:
     strategy:
       matrix:
-        haxe-version: [4.2.5, 4.3.2]
+        haxe-version: [4.2.5, 4.3.7]
     # AL init fails on both windows and ubuntu
     runs-on: macos-latest
     steps:
@@ -79,7 +79,7 @@ jobs:
   test-html5:
     strategy:
       matrix:
-        haxe-version: [4.2.5, 4.3.2]
+        haxe-version: [4.2.5, 4.3.7]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v6
@@ -112,7 +112,7 @@ jobs:
   test-air:
     strategy:
       matrix:
-        haxe-version: [4.2.5, 4.3.2]
+        haxe-version: [4.2.5, 4.3.7]
     runs-on: windows-latest
     steps:
     - uses: actions/checkout@v6
