@@ -329,6 +329,8 @@ class AssetLoader extends FeathersControl {
 		is ignored.
 
 		@see [`openfl.display.Bitmap.pixelSnapping`](https://api.openfl.org/openfl/display/Bitmap.html#pixelSnapping)
+
+		@since 1.4.0
 	**/
 	@:style
 	public var pixelSnapping:PixelSnapping = AUTO;
@@ -339,6 +341,8 @@ class AssetLoader extends FeathersControl {
 		ignored.
 
 		@see [`openfl.display.Bitmap.smoothing`](https://api.openfl.org/openfl/display/Bitmap.html#smoothing)
+
+		@since 1.4.0
 	**/
 	@:style
 	public var smoothing:Bool = false;
