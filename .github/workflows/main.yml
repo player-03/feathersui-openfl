@@ -17,7 +17,7 @@ jobs:
     - name: Package Haxelib
       working-directory: haxelib
       run: haxe haxelib.hxml
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: feathersui-haxelib
         path: bin/haxelib/
@@ -65,9 +65,10 @@ jobs:
         haxelib dev feathersui ${{ github.workspace }}
     - name: Build Flash .swc library
       run: haxelib run openfl build flash -debug
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: feathersui-openfl-swc
+        archive: false
         path: bin/flash/bin/feathersui-openfl.swc
         if-no-files-found: error
   build-api:
@@ -89,7 +90,7 @@ jobs:
     - name: Build API reference
       working-directory: docs
       run: haxe docs.hxml
-    - uses: actions/upload-artifact@v6
+    - uses: actions/upload-artifact@v7
       with:
         name: feathersui-openfl-docs
         path: bin/api/
