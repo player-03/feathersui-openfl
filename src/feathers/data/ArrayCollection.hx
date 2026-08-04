@@ -263,36 +263,64 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		@see `feathers.data.IFlatCollection.add`
 	**/
 	public function add(item:T):Void {
-		inline this.addAt(item, this.length);
+		this._array.push(item);
+		this._pendingRefresh = true;
+		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, this._array.length - 1, item);
+		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**
 		@see `feathers.data.IFlatCollection.addAt`
 	**/
 	public function addAt(item:T, index:Int):Void {
-		this.addAtInternal(item, index, true);
+		if (this._pendingRefresh) {
+			this.refreshFilterAndSort();
+		}
+		if (index < 0 || index > this.length) {
+			throw new RangeError('Failed to add item at index ${index}. Expected a value between 0 and ${this.length}.');
+		}
+		this._array.insert(findAddAtIndex(index), item);
+		this._pendingRefresh = true;
+		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, this.indexOf(item), item);
+		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**
 		@see `feathers.data.IFlatCollection.addAll`
 	**/
 	public function addAll(collection:IFlatCollection<T>):Void {
-		for (item in collection) {
-			this.add(item);
+		if (this._pendingRefresh) {
+			this.refreshFilterAndSort();
 		}
+		inline addAllAt(collection, this.length);
 	}
 
 	/**
 		@see `feathers.data.IFlatCollection.addAllAt`
 	**/
 	public function addAllAt(collection:IFlatCollection<T>, index:Int):Void {
+		if (this._pendingRefresh) {
+			this.refreshFilterAndSort();
+		}
 		if (index < 0 || index > this.length) {
 			throw new RangeError('Failed to add collection at index ${index}. Expected a value between 0 and ${this.length}.');
 		}
+		index = findAddAtIndex(index);
 		for (item in collection) {
-			this.addAt(item, index);
+			this._array.insert(index, item);
 			index++;
 		}
+		if (this._filterAndSortData != null) {
+			this.refreshFilterAndSort();
+			for (item in collection) {
+				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, this._filterAndSortData.indexOf(item), item);
+			}
+		} else {
+			for (item in collection) {
+				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, this._array.indexOf(item), item);
+			}
+		}
+		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**
@@ -316,9 +344,10 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		#end
 		if (collection != null) {
 			for (item in collection) {
-				this.addAtInternal(item, this.length, false);
+				this._array.push(item);
 			}
 		}
+		this._pendingRefresh = true;
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.RESET, -1);
 		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
@@ -642,48 +671,21 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		return this._filterAndSortData.length;
 	}
 
-	private function addAtInternal(item:T, index:Int, dispatchEvents:Bool):Void {
-		if (this._pendingRefresh) {
-			this.refreshFilterAndSort();
-		}
-		if (index < 0 || index > this.length) {
-			throw new RangeError('Failed to add item at index ${index}. Expected a value between 0 and ${this.length}.');
-		}
-		if (this._filterAndSortData != null) {
-			// if the item is added at the end of the filtered data
-			// then add it at the end of the unfiltered data
-			var unfilteredIndex = this._array.length;
-			if (index < this._filterAndSortData.length) {
-				// find the item at the index in the filtered data, and use its
-				// index from the unfiltered data
-				var oldItem = this._filterAndSortData[index];
-				unfilteredIndex = this._array.indexOf(oldItem);
-			}
-			// always add to the original data
-			this._array.insert(unfilteredIndex, item);
-			// but check if the item should be in the filtered data
-			var includeItem = true;
-			if (this._filterFunction != null) {
-				includeItem = this._filterFunction(item);
-			}
-			if (includeItem) {
-				var sortedIndex = index;
-				if (this._sortCompareFunction != null) {
-					sortedIndex = this.getSortedInsertionIndex(item);
-				}
-				this._filterAndSortData.insert(sortedIndex, item);
-				if (dispatchEvents) {
-					// don't dispatch these events if the item is filtered!
-					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
-					FeathersEvent.dispatch(this, Event.CHANGE);
-				}
-			}
-		} else {
-			this._array.insert(index, item);
-			if (dispatchEvents) {
-				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
-				FeathersEvent.dispatch(this, Event.CHANGE);
+	/**
+		Given a user-specified index, finds where an `addAt` function should
+		insert values into `_array`. This defaults to `_array.length` and never
+		returns -1.
+	**/
+	private function findAddAtIndex(index:Int):Int {
+		if (this._filterAndSortData == null) {
+			return index;
+		} else if (index >= 0 && index < this._filterAndSortData.length) {
+			var item:T = this._filterAndSortData[index];
+			var result:Int = this._array.indexOf(item);
+			if (result >= 0) {
+				return result;
 			}
 		}
+		return this._array.length;
 	}
 }
