@@ -310,9 +310,6 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		@see `feathers.data.IFlatCollection.reset`
 	**/
 	public function reset(collection:IFlatCollection<T> = null):Void {
-		if (this._pendingRefresh) {
-			this.refreshFilterAndSort();
-		}
 		if (this._filterAndSortData != null) {
 			resizeArray(this._filterAndSortData, 0);
 		}
@@ -375,15 +372,12 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		@see `feathers.data.IFlatCollection.removeAll`
 	**/
 	public function removeAll():Void {
-		if (this._pendingRefresh) {
-			this.refreshFilterAndSort();
+		if (this._filterAndSortData != null) {
+			resizeArray(this._filterAndSortData, 0);
 		}
 		if (this._array.length == 0) {
 			// nothing to remove
 			return;
-		}
-		if (this._filterAndSortData != null) {
-			resizeArray(this._filterAndSortData, 0);
 		}
 		resizeArray(this._array, 0);
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ALL, -1);
