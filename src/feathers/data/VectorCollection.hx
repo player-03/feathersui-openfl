@@ -326,9 +326,6 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 		@see `feathers.data.IFlatCollection.reset`
 	**/
 	public function reset(collection:IFlatCollection<T> = null):Void {
-		if (this._pendingRefresh) {
-			this.refreshFilterAndSort();
-		}
 		if (this._filterAndSortData != null) {
 			this._filterAndSortData.length = 0;
 		}
@@ -400,15 +397,12 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 		@see `feathers.data.IFlatCollection.removeAll`
 	**/
 	public function removeAll():Void {
-		if (this._pendingRefresh) {
-			this.refreshFilterAndSort();
+		if (this._filterAndSortData != null) {
+			this._filterAndSortData.length = 0;
 		}
 		if (this._vector.length == 0) {
 			// nothing to remove
 			return;
-		}
-		if (this._filterAndSortData != null) {
-			this._filterAndSortData.length = 0;
 		}
 		this._vector.length = 0;
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ALL, -1);
