@@ -210,86 +210,43 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 		if (index < 0 || index > this.length) {
 			throw new RangeError('Failed to set item at index ${index}. Expected a value between 0 and ${this.length}.');
 		}
+		var sourceIndex:Int = -1;
+		var removedItem:Null<T> = null;
 		if (this._filterAndSortData != null) {
-			// fall back to placing the new item at the end of the vector
-			var unfilteredIndex = this._vector.length;
-			var oldItem = null;
 			if (index < this._filterAndSortData.length) {
-				oldItem = this._filterAndSortData[index];
-				// to determine where the item is placed in the unfiltered vector
-				// find the unfiltered index of the item being replaced
-				unfilteredIndex = this._vector.indexOf(oldItem);
+				removedItem = this._filterAndSortData[index];
+				sourceIndex = this._vector.indexOf(removedItem);
 			}
-			this._vector[unfilteredIndex] = item;
-			if (this._filterFunction != null) {
-				var includeItem = this._filterFunction(item);
-				if (index < this._filterAndSortData.length) {
-					if (includeItem) {
-						// replace the old item
-						if (this._sortCompareFunction == null) {
-							this._filterAndSortData[index] = item;
-							FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
-						} else {
-							this._filterAndSortData.removeAt(index);
-							var sortedIndex = this.getSortedInsertionIndex(item);
-							this._filterAndSortData.insertAt(sortedIndex, item);
-							if (sortedIndex == index) {
-								FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
-							} else {
-								FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, oldItem);
-								FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, sortedIndex, item, null);
-							}
-						}
-						FeathersEvent.dispatch(this, Event.CHANGE);
-					} else {
-						// if the new item is excluded, the old item at this index
-						// is removed instead of being replaced by the new item
-						this._filterAndSortData.removeAt(index);
-						FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, oldItem);
-						FeathersEvent.dispatch(this, Event.CHANGE);
-					}
-				} else if (includeItem) {
-					if (this._sortCompareFunction == null) {
-						this._filterAndSortData[this._filterAndSortData.length] = item;
-						FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
-					} else {
-						var sortedIndex = this.getSortedInsertionIndex(item);
-						this._filterAndSortData.insertAt(sortedIndex, item);
-						FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, sortedIndex, item, null);
-					}
-					FeathersEvent.dispatch(this, Event.CHANGE);
-				}
-				return;
-			} else if (this._sortCompareFunction != null) {
-				// remove the old item first!
-				var index = this._filterAndSortData.indexOf(oldItem);
-				if (index != -1) {
-					this._filterAndSortData.removeAt(index);
-				}
-				// then try to figure out where the new item goes when inserted
-				var sortedIndex = this.getSortedInsertionIndex(item);
-				this._filterAndSortData.insertAt(sortedIndex, item);
-				if (index == sortedIndex) {
-					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
-				} else {
-					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, oldItem);
-					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, sortedIndex, item, null);
-				}
-				FeathersEvent.dispatch(this, Event.CHANGE);
-				return;
+		} else {
+			if (index < this._vector.length) {
+				removedItem = this._vector[index];
+				sourceIndex = index;
 			}
+		}
+		if (sourceIndex >= 0) {
+			this._vector[sourceIndex] = item;
+		} else {
+			this._vector.push(item);
+		}
+		var newIndex = index;
+		if (this._filterAndSortData != null) {
+			this.refreshFilterAndSort();
+			newIndex = this._filterAndSortData.indexOf(item);
 		}
 
-		// no filter or sort
-		if (index < this._vector.length) {
-			var oldItem = this._vector[index];
-			this._vector[index] = item;
-			FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
-		} else {
-			this._vector[index] = item;
-			FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
+		switch ([sourceIndex >= 0, newIndex >= 0]) {
+			case [true, true]:
+				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, removedItem);
+				FeathersEvent.dispatch(this, Event.CHANGE);
+			case [false, true]:
+				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
+				FeathersEvent.dispatch(this, Event.CHANGE);
+			case [true, false]:
+				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, removedItem);
+				FeathersEvent.dispatch(this, Event.CHANGE);
+			case [false, false]:
+				// display vector did not change
 		}
-		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**
