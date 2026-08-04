@@ -326,17 +326,9 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 			this.refreshFilterAndSort();
 		}
 		if (this._filterAndSortData != null) {
-			#if (hl && haxe_ver < 4.3)
-			this._filterAndSortData.splice(0, this._filterAndSortData.length);
-			#else
-			this._filterAndSortData.resize(0);
-			#end
+			resizeArray(this._filterAndSortData, 0);
 		}
-		#if (hl && haxe_ver < 4.3)
-		this._array.splice(0, this._array.length);
-		#else
-		this._array.resize(0);
-		#end
+		resizeArray(this._array, 0);
 		if (collection != null) {
 			for (item in collection) {
 				this._array.push(item);
@@ -412,17 +404,9 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 			return;
 		}
 		if (this._filterAndSortData != null) {
-			#if (hl && haxe_ver < 4.3)
-			this._filterAndSortData.splice(0, this._filterAndSortData.length);
-			#else
-			this._filterAndSortData.resize(0);
-			#end
+			resizeArray(this._filterAndSortData, 0);
 		}
-		#if (hl && haxe_ver < 4.3)
-		this._array.splice(0, this._array.length);
-		#else
-		this._array.resize(0);
-		#end
+		resizeArray(this._array, 0);
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ALL, -1);
 		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
@@ -618,11 +602,7 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 			var result = oldFilterAndSortData;
 			if (result != null) {
 				// reuse the old array to avoid garbage collection
-				#if (hl && haxe_ver < 4.3)
-				result.splice(0, result.length);
-				#else
-				result.resize(0);
-				#end
+				resizeArray(result, 0);
 			} else {
 				result = [];
 			}
@@ -639,7 +619,7 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		{
 			var result = oldFilterAndSortData;
 			if (result != null) {
-				result.resize(this._array.length);
+				resizeArray(result, this._array.length);
 				for (i in 0...this._array.length) {
 					result[i] = this._array[i];
 				}
@@ -652,6 +632,18 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		if (this._sortCompareFunction != null) {
 			this._filterAndSortData.sort(this._sortCompareFunction);
 		}
+	}
+
+	private static inline function resizeArray<T>(array:Array<T>, length:Int):Void {
+		#if (hl && haxe_ver < 4.3)
+		if (length == 0) {
+			array.splice(0, array.length);
+		} else {
+			array.resize(length);
+		}
+		#else
+		array.resize(length);
+		#end
 	}
 
 	/**
