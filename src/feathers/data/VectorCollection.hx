@@ -568,6 +568,9 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 			return;
 		}
 		trace(CallStack.toString(CallStack.callStack().slice(0, 5)));
+		if (this._vector == null) {
+			throw "_vector is null";
+		}
 
 		if (this._filterAndSortData == null) {
 			this._filterAndSortData = this._vector.copy();
@@ -577,12 +580,23 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 				this._filterAndSortData[i] = this._vector[i];
 			}
 		}
+		if (this._filterAndSortData == null) {
+			throw "_filterAndSortData is null";
+		}
+		if (this._filterAndSortData.fixed) {
+			throw "_filterAndSortData is fixed";
+		}
 
 		if (this._filterFunction != null) {
 			var newLength:Int = 0;
 			for (item in this._filterAndSortData) {
 				if (this._filterFunction(item)) {
-					this._filterAndSortData[newLength] = item;
+					if (newLength >= this._filterAndSortData.length) {
+						trace("Out of bounds");
+						this._filterAndSortData.push(item);
+					} else {
+						this._filterAndSortData[newLength] = item;
+					}
 					newLength++;
 				}
 			}
