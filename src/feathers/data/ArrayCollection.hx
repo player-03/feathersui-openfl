@@ -564,31 +564,40 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 
 	private function refreshFilterAndSort():Void {
 		this._pendingRefresh = false;
-		if (this._filterFunction == null && this._sortCompareFunction == null) {
-			this._filterAndSortData = null;
-			return;
-		}
-
-		if (this._filterAndSortData == null) {
-			this._filterAndSortData = this._array.copy();
-		} else {
-			resizeArray(this._filterAndSortData, this._array.length);
-			for (i in 0...this._array.length) {
-				this._filterAndSortData[i] = this._array[i];
-			}
-		}
-
+		var oldFilterAndSortData = this._filterAndSortData;
+		// set to null while applying filter so that locationOf() works properly
+		this._filterAndSortData = null;
 		if (this._filterFunction != null) {
-			var newLength:Int = 0;
-			for (item in this._filterAndSortData) {
+			var result = oldFilterAndSortData;
+			if (result != null) {
+				// reuse the old array to avoid garbage collection
+				resizeArray(result, 0);
+			} else {
+				result = [];
+			}
+			var resultIndex = 0;
+			for (i in 0...this._array.length) {
+				var item = this._array[i];
 				if (this._filterFunction(item)) {
-					this._filterAndSortData[newLength] = item;
-					newLength++;
+					result[resultIndex] = item;
+					resultIndex++;
 				}
 			}
-			resizeArray(this._filterAndSortData, newLength);
+			this._filterAndSortData = result;
+		} else if (this._sortCompareFunction != null) // no filter
+		{
+			var result = oldFilterAndSortData;
+			if (result != null) {
+				resizeArray(result, this._array.length);
+				for (i in 0...this._array.length) {
+					result[i] = this._array[i];
+				}
+			} else {
+				// simply make a copy!
+				result = this._array.slice(0);
+			}
+			this._filterAndSortData = result;
 		}
-
 		if (this._sortCompareFunction != null) {
 			this._filterAndSortData.sort(this._sortCompareFunction);
 		}

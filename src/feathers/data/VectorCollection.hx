@@ -562,31 +562,40 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 
 	private function refreshFilterAndSort():Void {
 		this._pendingRefresh = false;
-		if (this._filterFunction == null && this._sortCompareFunction == null) {
-			this._filterAndSortData = null;
-			return;
-		}
-
-		if (this._filterAndSortData == null) {
-			this._filterAndSortData = this._vector.copy();
-		} else {
-			this._filterAndSortData.length = this._vector.length;
-			for (i in 0...this._vector.length) {
-				this._filterAndSortData[i] = this._vector[i];
-			}
-		}
-
+		var oldFilterAndSortData = this._filterAndSortData;
+		// set to null while applying filter so that locationOf() works properly
+		this._filterAndSortData = null;
 		if (this._filterFunction != null) {
-			var newLength:Int = 0;
-			for (item in this._filterAndSortData) {
+			var result = oldFilterAndSortData;
+			if (result != null) {
+				// reuse the old vector to avoid garbage collection
+				result.length = 0;
+			} else {
+				result = new Vector<T>();
+			}
+			var resultIndex = 0;
+			for (i in 0...this._vector.length) {
+				var item = this._vector[i];
 				if (this._filterFunction(item)) {
-					this._filterAndSortData[newLength] = item;
-					newLength++;
+					result[resultIndex] = item;
+					resultIndex++;
 				}
 			}
-			this._filterAndSortData.length = newLength;
+			this._filterAndSortData = result;
+		} else if (this._sortCompareFunction != null) // no filter
+		{
+			var result = oldFilterAndSortData;
+			if (result != null) {
+				result.length = this._vector.length;
+				for (i in 0...this._vector.length) {
+					result[i] = this._vector[i];
+				}
+			} else {
+				// simply make a copy!
+				result = this._vector.slice(0);
+			}
+			this._filterAndSortData = result;
 		}
-
 		if (this._sortCompareFunction != null) {
 			this._filterAndSortData.sort(this._sortCompareFunction);
 		}
