@@ -580,11 +580,6 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 			var newLength:Int = 0;
 			for (item in this._filterAndSortData) {
 				if (this._filterFunction(item)) {
-					#if (mac && hl)
-					if (newLength >= this._filterAndSortData.length) {
-						throw new RangeError('Expected newLength < _filterAndSortData.length, but got $newLength >= ${this._filterAndSortData.length}, indicating that _filterAndSortData is somehow longer than itself.');
-					}
-					#end
 					this._filterAndSortData[newLength] = item;
 					newLength++;
 				}
