@@ -107,9 +107,7 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 			value = [];
 		}
 		this._array = value;
-		if (this._filterFunction != null || this._sortCompareFunction != null) {
-			this._pendingRefresh = true;
-		}
+		this._pendingRefresh = true;
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.RESET, -1);
 		FeathersEvent.dispatch(this, Event.CHANGE);
 		return this._array;
