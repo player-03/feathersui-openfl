@@ -711,12 +711,11 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 }
 
 private class FilterAndSortItem<T> {
-	public function new(item:T, ?children:Array<FilterAndSortItem<T>>, ?originalChildren:Array<T>) {
+	public function new(item:T) {
 		this.item = item;
-		this.children = children;
 	}
 
 	public var item:T;
-	public var children:Array<FilterAndSortItem<T>>;
-	public var originalChildren:Array<T>;
+	public var children:Array<FilterAndSortItem<T>> = null;
+	public var originalChildren:Array<T> = null;
 }
