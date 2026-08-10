@@ -372,11 +372,12 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		var item:T = null;
 		if (this._filterAndSortData != null) {
 			item = this._filterAndSortData[index];
-			this._filterAndSortData.remove(item);
-			this._array.remove(item);
+			this._filterAndSortData.splice(index, 1);
+			var arrayIndex = this._array.indexOf(item);
+			this._array.splice(arrayIndex, 1);
 		} else {
 			item = this._array[index];
-			this._array.remove(item);
+			this._array.splice(index, 1);
 		}
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, item);
 		FeathersEvent.dispatch(this, Event.CHANGE);
