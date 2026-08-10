@@ -268,7 +268,7 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 	}
 
 	/**
-		@see `feathers.data.IHierarchicalCollection.locationOf`
+		@see `feathers.data.IHierarchicalCollection.contains`
 	**/
 	public function contains(item:T):Bool {
 		if (this._pendingRefresh) {
