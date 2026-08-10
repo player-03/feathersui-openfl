@@ -629,8 +629,11 @@ class ArrayCollectionTest extends Test {
 		this._collection.set(1, newItem);
 
 		// the index we passed in isn't necessarily the same while sorted
-		Assert.equals(newItem, this._collection.get(1), "Collection with sortCompareFunction and set() did not return correct item for sorted index");
 		Assert.isFalse(this._collection.contains(this._d), "Collection with sortCompareFunction and set() did not remove correct item for sorted index");
+		Assert.equals(this._a, this._collection.get(0), "Collection with sortCompareFunction and set() did not return correct item for sorted index 0");
+		Assert.equals(newItem, this._collection.get(1), "Collection with sortCompareFunction and set() did not return correct item for sorted index 1");
+		Assert.equals(this._b, this._collection.get(2), "Collection with sortCompareFunction and set() did not return correct item for sorted index 2");
+		Assert.equals(this._c, this._collection.get(3), "Collection with sortCompareFunction and set() did not return correct item for sorted index 3");
 
 		this._collection.sortCompareFunction = null;
 
@@ -639,7 +642,10 @@ class ArrayCollectionTest extends Test {
 		// the sorted data that was at the index passed to set().
 		// it may be confusing, but it's consistent with set() on filtered
 		// collections
-		Assert.equals(newItem, this._collection.get(3), "Collection with sortCompareFunction and add() did not return correct item for unsorted index");
+		Assert.equals(this._a, this._collection.get(0), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 0");
+		Assert.equals(this._b, this._collection.get(1), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 1");
+		Assert.equals(this._c, this._collection.get(2), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 2");
+		Assert.equals(newItem, this._collection.get(3), "Collection with sortCompareFunction and add() did not return correct item for unsorted index 3");
 	}
 
 	//--- sortCompareFunction AND filterFunction
