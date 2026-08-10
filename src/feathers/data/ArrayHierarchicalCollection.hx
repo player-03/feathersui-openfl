@@ -278,8 +278,23 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 				if (lastLocationIndex < filteredOrSortedBranchChildren.length) {
 					if (includeItem) {
 						// replace the old item
-						filteredOrSortedBranchChildren[lastLocationIndex] = this.createFilterAndSortItem(value);
-						HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, value, oldItem);
+						if (this._sortCompareFunction == null) {
+							filteredOrSortedBranchChildren[lastLocationIndex] = this.createFilterAndSortItem(value);
+							HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, value, oldItem);
+						} else {
+							filteredOrSortedBranchChildren.splice(lastLocationIndex, 1);
+							var wrappedItem = this.createFilterAndSortItem(value);
+							var sortedIndex = this.getSortedInsertionIndex(filteredOrSortedBranchChildren, wrappedItem);
+							this._filterAndSortData.insert(sortedIndex, wrappedItem);
+							if (sortedIndex == lastLocationIndex) {
+								HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, value, oldItem);
+							} else {
+								HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ITEM, location, null, oldItem);
+								location = location.copy();
+								location[location.length - 1] = sortedIndex;
+								HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, value, null);
+							}
+						}
 						FeathersEvent.dispatch(this, Event.CHANGE);
 					} else {
 						// if the new item is excluded, the old item at this index
@@ -289,8 +304,19 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 						FeathersEvent.dispatch(this, Event.CHANGE);
 					}
 				} else if (includeItem) {
-					filteredOrSortedBranchChildren[filteredOrSortedBranchChildren.length] = this.createFilterAndSortItem(value);
-					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, value);
+					if (this._sortCompareFunction == null) {
+						filteredOrSortedBranchChildren[filteredOrSortedBranchChildren.length] = this.createFilterAndSortItem(value);
+						HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, value);
+					} else {
+						var wrappedItem = this.createFilterAndSortItem(value);
+						var sortedIndex = this.getSortedInsertionIndex(filteredOrSortedBranchChildren, wrappedItem);
+						this._filterAndSortData.insert(sortedIndex, wrappedItem);
+						if (sortedIndex != lastLocationIndex) {
+							location = location.copy();
+							location[location.length - 1] = sortedIndex;
+						}
+						HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, value, null);
+					}
 					FeathersEvent.dispatch(this, Event.CHANGE);
 				}
 			} else if (this._sortCompareFunction != null) {

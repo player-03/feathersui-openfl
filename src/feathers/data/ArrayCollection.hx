@@ -222,8 +222,20 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 				if (index < this._filterAndSortData.length) {
 					if (includeItem) {
 						// replace the old item
-						this._filterAndSortData[index] = item;
-						FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
+						if (this._sortCompareFunction == null) {
+							this._filterAndSortData[index] = item;
+							FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
+						} else {
+							this._filterAndSortData.splice(index, 1);
+							var sortedIndex = this.getSortedInsertionIndex(item);
+							this._filterAndSortData.insert(sortedIndex, item);
+							if (sortedIndex == index) {
+								FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
+							} else {
+								FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, oldItem);
+								FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, sortedIndex, item, null);
+							}
+						}
 						FeathersEvent.dispatch(this, Event.CHANGE);
 					} else {
 						// if the new item is excluded, the old item at this index
@@ -233,8 +245,14 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 						FeathersEvent.dispatch(this, Event.CHANGE);
 					}
 				} else if (includeItem) {
-					this._filterAndSortData[this._filterAndSortData.length] = item;
-					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
+					if (this._sortCompareFunction == null) {
+						this._filterAndSortData[this._filterAndSortData.length] = item;
+						FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
+					} else {
+						var sortedIndex = this.getSortedInsertionIndex(item);
+						this._filterAndSortData.insert(sortedIndex, item);
+						FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, sortedIndex, item, null);
+					}
 					FeathersEvent.dispatch(this, Event.CHANGE);
 				}
 				return;
