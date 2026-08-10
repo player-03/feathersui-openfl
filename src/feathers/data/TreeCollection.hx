@@ -112,6 +112,9 @@ class TreeCollection<T> extends EventDispatcher implements IHierarchicalCollecti
 			value = [];
 		}
 		this._array = value;
+		if (this._filterFunction != null || this._sortCompareFunction != null) {
+			this._pendingRefresh = true;
+		}
 		HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.RESET, null);
 		FeathersEvent.dispatch(this, Event.CHANGE);
 		return this._array;

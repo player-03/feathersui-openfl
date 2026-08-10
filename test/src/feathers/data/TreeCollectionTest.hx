@@ -684,6 +684,34 @@ import utest.Test;
 		this._collection.get([0]);
 	}
 
+	public function testChangeSourceWithFilterFunction():Void {
+		this._collection.filterFunction = (item:TreeNode<MockItem>) -> {
+			var location = this._collection.locationOf(item);
+			if (location.length > 1) {
+				return true;
+			}
+			return location[0] % 2 == 0;
+		};
+		Assert.equals(3, this._collection.getLength());
+		Assert.equals(this._1, this._collection.get([0]));
+		Assert.equals(this._3, this._collection.get([1]));
+		Assert.equals(this._5, this._collection.get([2]));
+
+		var new1 = new TreeNode(new MockItem("New Item 1", 101));
+		var new2 = new TreeNode(new MockItem("New Item 2", 102));
+		this._collection.array = [new1, new2];
+
+		Assert.equals(1, this._collection.getLength());
+		Assert.equals(new1, this._collection.get([0]));
+		Assert.isTrue(locationsMatch([0], this._collection.locationOf(new1)));
+		Assert.isNull(this._collection.locationOf(new2));
+		Assert.isFalse(this._collection.contains(this._1));
+		Assert.isFalse(this._collection.contains(this._2));
+		Assert.isFalse(this._collection.contains(this._3));
+		Assert.isFalse(this._collection.contains(this._4));
+		Assert.isFalse(this._collection.contains(this._5));
+	}
+
 	//--- sortCompareFunction
 
 	public function testSortCompareFunction():Void {

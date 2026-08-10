@@ -525,6 +525,29 @@ class VectorCollectionTest extends Test {
 		this._collection.get(0);
 	}
 
+	public function testChangeSourceWithFilterFunction():Void {
+		this._collection.filterFunction = (item:MockItem) -> {
+			var index = this._collection.indexOf(item);
+			return index % 2 == 0;
+		};
+		Assert.equals(2, this._collection.length);
+		Assert.equals(this._a, this._collection.get(0));
+		Assert.equals(this._c, this._collection.get(1));
+
+		var new1 = new MockItem("New Item 1", 101);
+		var new2 = new MockItem("New Item 2", 102);
+		this._collection.vector = Vector.ofArray([new1, new2]);
+
+		Assert.equals(1, this._collection.length);
+		Assert.equals(new1, this._collection.get(0));
+		Assert.equals(0, this._collection.indexOf(new1));
+		Assert.equals(-1, this._collection.indexOf(new2));
+		Assert.isFalse(this._collection.contains(this._a));
+		Assert.isFalse(this._collection.contains(this._b));
+		Assert.isFalse(this._collection.contains(this._c));
+		Assert.isFalse(this._collection.contains(this._d));
+	}
+
 	//--- sortCompareFunction
 
 	public function testSortCompareFunction():Void {
