@@ -228,12 +228,18 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 		var removedItem:Null<T> = index < branch.length ? branch.get(index) : null;
 		branch.set(index, item, this._itemToChildren);
 		this.refreshFilterAndSort(branch);
-		switch ([removedItem != null, branch.contains(item)]) {
+		var newLocation:Array<Int> = location.slice(0, location.length - 1);
+		switch ([removedItem != null, branch.find(item, newLocation)]) {
 			case [true, true]:
-				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, item, removedItem);
+				if (location.length == newLocation.length && location[location.length - 1] == newLocation[newLocation.length - 1]) {
+					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, item, removedItem);
+				} else {
+					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ITEM, location, null, removedItem);
+					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, newLocation, item);
+				}
 				FeathersEvent.dispatch(this, Event.CHANGE);
 			case [false, true]:
-				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, item);
+				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, newLocation, item);
 				FeathersEvent.dispatch(this, Event.CHANGE);
 			case [true, false]:
 				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ITEM, location, null, removedItem);

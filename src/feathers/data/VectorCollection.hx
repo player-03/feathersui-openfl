@@ -234,10 +234,15 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 
 		switch ([sourceIndex >= 0, newIndex >= 0]) {
 			case [true, true]:
-				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, removedItem);
+				if (index == newIndex) {
+					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, removedItem);
+				} else {
+					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, item);
+					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, newIndex, item);
+				}
 				FeathersEvent.dispatch(this, Event.CHANGE);
 			case [false, true]:
-				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
+				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, newIndex, item);
 				FeathersEvent.dispatch(this, Event.CHANGE);
 			case [true, false]:
 				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, removedItem);
