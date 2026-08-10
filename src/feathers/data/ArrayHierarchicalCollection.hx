@@ -555,7 +555,7 @@ private class Branch<T> {
 			}
 			return false;
 		}
-		if (this.items.contains(item)) {
+		if (this.items.indexOf(item) >= 0) {
 			return true;
 		}
 		for (child in children) {
@@ -567,15 +567,15 @@ private class Branch<T> {
 	}
 
 	public function find(item:T, result:Array<Int>):Bool {
-		if (displayOrder != null) {
-			for (displayIndex => index in displayOrder) {
-				if (findAtIndex(item, index, displayIndex, result)) {
+		if (this.displayOrder != null) {
+			for (displayIndex in 0...this.displayOrder.length) {
+				if (this.findAtIndex(item, this.displayOrder[displayIndex], displayIndex, result)) {
 					return true;
 				}
 			}
 		} else {
 			for (index in 0...this.items.length) {
-				if (findAtIndex(item, index, index, result)) {
+				if (this.findAtIndex(item, index, index, result)) {
 					return true;
 				}
 			}
