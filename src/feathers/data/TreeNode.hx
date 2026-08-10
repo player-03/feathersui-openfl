@@ -11,10 +11,14 @@ package feathers.data;
 /**
 	A node in a `TreeCollection` object.
 
+	**Deprecation Warning!** This API will be removed in a future version. Use
+	`ArrayHierarchicalCollection` instead of `TreeCollection`.
+
 	@see `feathers.data.TreeCollection`
 
 	@since 1.0.0
 **/
+@:deprecated("TreeCollection is replaced by ArrayHierarchicalCollection")
 class TreeNode<T> {
 	/**
 		Creates a new `TreeNode` object with the given arguments.

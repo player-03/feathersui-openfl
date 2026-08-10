@@ -19,6 +19,9 @@ import openfl.events.EventDispatcher;
 	controls that support hierarchical data, such as `TreeView` or
 	`TreeGridView`.
 
+	**Deprecation Warning!** This API will be removed in a future version. Use
+	`ArrayHierarchicalCollection` instead.
+
 	@event openfl.events.Event.CHANGE Dispatched when the collection changes.
 
 	@event feathers.events.HierarchicalCollectionEvent.ADD_ITEM Dispatched when
@@ -53,6 +56,7 @@ import openfl.events.EventDispatcher;
 
 	@since 1.0.0
 **/
+@:deprecated("Replaced by ArrayHierarchicalCollection")
 @:event(openfl.events.Event.CHANGE)
 @:event(feathers.events.HierarchicalCollectionEvent.ADD_ITEM)
 @:event(feathers.events.HierarchicalCollectionEvent.REMOVE_ITEM)
