@@ -337,19 +337,24 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 		if (this._pendingRefresh) {
 			this.refreshFilterAndSort();
 		}
+		var sortedIndex = -1;
 		if (this._filterAndSortData != null) {
-			var index = this._filterAndSortData.indexOf(item);
-			if (index == -1) {
+			sortedIndex = this._filterAndSortData.indexOf(item);
+			if (sortedIndex == -1) {
 				return;
 			}
-			this._filterAndSortData.removeAt(index);
+			this._filterAndSortData.removeAt(sortedIndex);
 		}
-		var index = this._vector.indexOf(item);
-		if (index == -1) {
+		var unsortedIndex = this._vector.indexOf(item);
+		if (unsortedIndex == -1) {
+			// this should never happen
 			return;
 		}
-		this._vector.removeAt(index);
-		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, item);
+		this._vector.removeAt(unsortedIndex);
+		if (sortedIndex == -1) {
+			sortedIndex = unsortedIndex;
+		}
+		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, sortedIndex, null, item);
 		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 

@@ -868,8 +868,16 @@ import utest.Test;
 
 	public function testRemoveWithSortCompareFunction():Void {
 		this._collection.sortCompareFunction = sortCompareFunction;
+		var removeItemEvent = false;
+		var locationFromEvent:Array<Int> = null;
+		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
+			removeItemEvent = true;
+			locationFromEvent = event.location;
+		});
 		this._collection.remove(this._2);
 
+		Assert.isTrue(removeItemEvent);
+		Assert.isTrue(locationsMatch([2], locationFromEvent));
 		Assert.equals(4, this._collection.getLength());
 		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 0");
 		Assert.equals(this._4, this._collection.get([1]), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 1");
@@ -887,8 +895,16 @@ import utest.Test;
 
 	public function testRemoveAtWithSortCompareFunction():Void {
 		this._collection.sortCompareFunction = sortCompareFunction;
+		var removeItemEvent = false;
+		var locationFromEvent:Array<Int> = null;
+		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
+			removeItemEvent = true;
+			locationFromEvent = event.location;
+		});
 		this._collection.removeAt([2]);
 
+		Assert.isTrue(removeItemEvent);
+		Assert.isTrue(locationsMatch([2], locationFromEvent));
 		Assert.equals(4, this._collection.getLength());
 		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 0");
 		Assert.equals(this._4, this._collection.get([1]), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 1");

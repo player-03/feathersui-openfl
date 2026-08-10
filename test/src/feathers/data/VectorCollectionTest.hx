@@ -694,9 +694,25 @@ class VectorCollectionTest extends Test {
 	}
 
 	public function testRemoveWithSortCompareFunction():Void {
+		Assert.equals(this._a, this._collection.get(0));
+		Assert.equals(this._b, this._collection.get(1));
+		Assert.equals(this._c, this._collection.get(2));
+		Assert.equals(this._d, this._collection.get(3));
 		this._collection.sortCompareFunction = sortCompareFunction;
+		Assert.equals(this._a, this._collection.get(0));
+		Assert.equals(this._d, this._collection.get(1));
+		Assert.equals(this._b, this._collection.get(2));
+		Assert.equals(this._c, this._collection.get(3));
+		var removeItemEvent = false;
+		var indexFromEvent = -1;
+		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
+			removeItemEvent = true;
+			indexFromEvent = event.index;
+		});
 		this._collection.remove(this._b);
 
+		Assert.isTrue(removeItemEvent);
+		Assert.equals(2, indexFromEvent);
 		Assert.equals(3, this._collection.length);
 		Assert.equals(this._a, this._collection.get(0), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 0");
 		Assert.equals(this._d, this._collection.get(1), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 1");
@@ -712,8 +728,16 @@ class VectorCollectionTest extends Test {
 
 	public function testRemoveAtWithSortCompareFunction():Void {
 		this._collection.sortCompareFunction = sortCompareFunction;
+		var removeItemEvent = false;
+		var indexFromEvent = -1;
+		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
+			removeItemEvent = true;
+			indexFromEvent = event.index;
+		});
 		this._collection.removeAt(2);
 
+		Assert.isTrue(removeItemEvent);
+		Assert.equals(2, indexFromEvent);
 		Assert.equals(3, this._collection.length);
 		Assert.equals(this._a, this._collection.get(0), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 0");
 		Assert.equals(this._d, this._collection.get(1), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 1");
