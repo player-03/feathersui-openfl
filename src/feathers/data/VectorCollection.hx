@@ -248,7 +248,12 @@ class VectorCollection<T> extends EventDispatcher implements IFlatCollection<T> 
 				// then try to figure out where the new item goes when inserted
 				var sortedIndex = this.getSortedInsertionIndex(item);
 				this._filterAndSortData.insertAt(sortedIndex, item);
-				FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
+				if (index == sortedIndex) {
+					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REPLACE_ITEM, index, item, oldItem);
+				} else {
+					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.REMOVE_ITEM, index, null, oldItem);
+					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, sortedIndex, item, null);
+				}
 				FeathersEvent.dispatch(this, Event.CHANGE);
 				return;
 			}

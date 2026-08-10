@@ -294,7 +294,14 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 				var wrappedItem = this.createFilterAndSortItem(value);
 				var sortedIndex = this.getSortedInsertionIndex(filteredOrSortedBranchChildren, wrappedItem);
 				filteredOrSortedBranchChildren.insert(sortedIndex, wrappedItem);
-				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, value, oldItem);
+				if (lastLocationIndex == sortedIndex) {
+					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, value, oldItem);
+				} else {
+					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ITEM, location, null, oldItem);
+					location = location.copy();
+					location[location.length - 1] = sortedIndex;
+					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, value, null);
+				}
 				FeathersEvent.dispatch(this, Event.CHANGE);
 				return;
 			}
