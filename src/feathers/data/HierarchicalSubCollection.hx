@@ -242,6 +242,7 @@ class HierarchicalSubCollection<T> extends EventDispatcher implements IHierarchi
 	**/
 	public function updateAll():Void {
 		HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.UPDATE_ALL, null);
+		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**

@@ -687,6 +687,52 @@ import utest.Test;
 		Assert.isFalse(this._collection.contains(this._5));
 	}
 
+	public function testUpdateAtWithFilterFunction():Void {
+		this._collection.filterFunction = (item:MockItem) -> {
+			return item.value > 1 && item.value < 5;
+		};
+		Assert.equals(3, this._collection.getLength());
+		Assert.equals(this._2, this._collection.get([0]));
+		Assert.equals(this._3, this._collection.get([1]));
+		Assert.equals(this._5, this._collection.get([2]));
+
+		this._3.value = 100;
+		this._collection.updateAt([0]);
+
+		Assert.equals(2, this._collection.getLength());
+		Assert.equals(this._2, this._collection.get([0]));
+		Assert.equals(this._5, this._collection.get([1]));
+		Assert.isFalse(this._collection.contains(this._1));
+		Assert.isTrue(this._collection.contains(this._2));
+		Assert.isFalse(this._collection.contains(this._3));
+		Assert.isFalse(this._collection.contains(this._4));
+		Assert.isTrue(this._collection.contains(this._5));
+	}
+
+	public function testUpdateAllWithFilterFunction():Void {
+		this._collection.filterFunction = (item:MockItem) -> {
+			return item.value > 1 && item.value < 5;
+		};
+		Assert.equals(3, this._collection.getLength());
+		Assert.equals(this._2, this._collection.get([0]));
+		Assert.equals(this._3, this._collection.get([1]));
+		Assert.equals(this._5, this._collection.get([2]));
+
+		this._1.value = 4;
+		this._3.value = 100;
+		this._collection.updateAll();
+
+		Assert.equals(3, this._collection.getLength());
+		Assert.equals(this._1, this._collection.get([0]));
+		Assert.equals(this._2, this._collection.get([1]));
+		Assert.equals(this._5, this._collection.get([2]));
+		Assert.isTrue(this._collection.contains(this._1));
+		Assert.isTrue(this._collection.contains(this._2));
+		Assert.isFalse(this._collection.contains(this._3));
+		Assert.isFalse(this._collection.contains(this._4));
+		Assert.isTrue(this._collection.contains(this._5));
+	}
+
 	//--- sortCompareFunction
 
 	public function testSortCompareFunction():Void {

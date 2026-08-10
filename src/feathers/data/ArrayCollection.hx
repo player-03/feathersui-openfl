@@ -442,16 +442,22 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 		if (index < 0 || index >= this.length) {
 			throw new RangeError('Failed to update item at index ${index}. Expected a value between 0 and ${this.length - 1}.');
 		}
+		if (this._filterFunction != null || this._sortCompareFunction != null) {
+			this._pendingRefresh = true;
+		}
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.UPDATE_ITEM, index);
-		this.refresh();
+		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**
 		@see `feathers.data.IFlatCollection.updateAll`
 	**/
 	public function updateAll():Void {
+		if (this._filterFunction != null || this._sortCompareFunction != null) {
+			this._pendingRefresh = true;
+		}
 		FlatCollectionEvent.dispatch(this, FlatCollectionEvent.UPDATE_ALL, -1);
-		this.refresh();
+		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**

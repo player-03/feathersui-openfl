@@ -512,12 +512,12 @@ class ArrayCollectionTest extends Test {
 
 	public function testIndexOfInsideSecondFilterFunction():Void {
 		this._collection.filterFunction = (item:MockItem) -> {
-			var index = this._collection.indexOf(item);
+			var index = this._collection.array.indexOf(item);
 			return index % 2 == 0;
 		};
 		this._collection.get(0);
 		this._collection.filterFunction = (item:MockItem) -> {
-			var index = this._collection.indexOf(item);
+			var index = this._collection.array.indexOf(item);
 			Assert.notEquals(-1, index, "Collection with filterFunction must not return -1 for index during filtering");
 			return index % 2 == 0;
 		};
@@ -526,7 +526,7 @@ class ArrayCollectionTest extends Test {
 
 	public function testChangeSourceWithFilterFunction():Void {
 		this._collection.filterFunction = (item:MockItem) -> {
-			var index = this._collection.indexOf(item);
+			var index = this._collection.array.indexOf(item);
 			return index % 2 == 0;
 		};
 		Assert.equals(2, this._collection.length);
@@ -544,6 +544,46 @@ class ArrayCollectionTest extends Test {
 		Assert.isFalse(this._collection.contains(this._a));
 		Assert.isFalse(this._collection.contains(this._b));
 		Assert.isFalse(this._collection.contains(this._c));
+		Assert.isFalse(this._collection.contains(this._d));
+	}
+
+	public function testUpdateAtWithFilterFunction():Void {
+		this._collection.filterFunction = (item:MockItem) -> {
+			return item.value > 1 && item.value < 5;
+		};
+		Assert.equals(2, this._collection.length);
+		Assert.equals(this._b, this._collection.get(0));
+		Assert.equals(this._c, this._collection.get(1));
+
+		this._b.value = 100;
+		this._collection.updateAt(0);
+
+		Assert.equals(1, this._collection.length);
+		Assert.equals(this._c, this._collection.get(0));
+		Assert.isFalse(this._collection.contains(this._a));
+		Assert.isFalse(this._collection.contains(this._b));
+		Assert.isTrue(this._collection.contains(this._c));
+		Assert.isFalse(this._collection.contains(this._d));
+	}
+
+	public function testUpdateAllWithFilterFunction():Void {
+		this._collection.filterFunction = (item:MockItem) -> {
+			return item.value > 1 && item.value < 5;
+		};
+		Assert.equals(2, this._collection.length);
+		Assert.equals(this._b, this._collection.get(0));
+		Assert.equals(this._c, this._collection.get(1));
+
+		this._a.value = 4;
+		this._b.value = 100;
+		this._collection.updateAll();
+
+		Assert.equals(2, this._collection.length);
+		Assert.equals(this._a, this._collection.get(0));
+		Assert.equals(this._c, this._collection.get(1));
+		Assert.isTrue(this._collection.contains(this._a));
+		Assert.isFalse(this._collection.contains(this._b));
+		Assert.isTrue(this._collection.contains(this._c));
 		Assert.isFalse(this._collection.contains(this._d));
 	}
 
