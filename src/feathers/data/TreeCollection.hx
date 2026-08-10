@@ -380,6 +380,10 @@ class TreeCollection<T> extends EventDispatcher implements IHierarchicalCollecti
 					sortedIndex = this.getSortedInsertionIndex(filteredOrSortedBranchChildren, wrappedItem);
 				}
 				filteredOrSortedBranchChildren.insert(sortedIndex, wrappedItem);
+				if (sortedIndex != lastLocationIndex) {
+					location = location.copy();
+					location[location.length - 1] = sortedIndex;
+				}
 				// don't dispatch these events if the item is filtered!
 				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, itemToAdd);
 				FeathersEvent.dispatch(this, Event.CHANGE);

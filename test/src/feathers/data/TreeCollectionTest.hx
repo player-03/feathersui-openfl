@@ -831,8 +831,16 @@ import utest.Test;
 	public function testAddAtWithSortCompareFunction():Void {
 		var newItem = new TreeNode(new MockItem("New Item", 1.5));
 		this._collection.sortCompareFunction = sortCompareFunction;
+		var addItemEvent = false;
+		var locationFromEvent:Array<Int> = null;
+		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
+			addItemEvent = true;
+			locationFromEvent = event.location;
+		});
 		this._collection.addAt(newItem, [1]);
 
+		Assert.isTrue(addItemEvent);
+		Assert.isTrue(locationsMatch([2], locationFromEvent));
 		Assert.equals(6, this._collection.getLength());
 		// the index we passed in isn't necessarily the same while sorted
 		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 0");

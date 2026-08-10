@@ -688,7 +688,7 @@ class ArrayCollection<T> extends EventDispatcher implements IFlatCollection<T> i
 				this._filterAndSortData.insert(sortedIndex, item);
 				if (dispatchEvents) {
 					// don't dispatch these events if the item is filtered!
-					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, index, item);
+					FlatCollectionEvent.dispatch(this, FlatCollectionEvent.ADD_ITEM, sortedIndex, item);
 					FeathersEvent.dispatch(this, Event.CHANGE);
 				}
 			}

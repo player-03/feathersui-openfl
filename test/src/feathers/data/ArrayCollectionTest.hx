@@ -629,8 +629,16 @@ class ArrayCollectionTest extends Test {
 	public function testAddWithSortCompareFunction():Void {
 		var newItem = new MockItem("New Item", 1.5);
 		this._collection.sortCompareFunction = sortCompareFunction;
+		var addItemEvent = false;
+		var indexFromEvent = -1;
+		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
+			addItemEvent = true;
+			indexFromEvent = event.index;
+		});
 		this._collection.add(newItem);
 
+		Assert.isTrue(addItemEvent);
+		Assert.equals(2, indexFromEvent);
 		Assert.equals(5, this._collection.length);
 		Assert.equals(this._a, this._collection.get(0), "Collection with sortCompareFunction and add() did not return correct item for sorted index 0");
 		Assert.equals(this._d, this._collection.get(1), "Collection with sortCompareFunction and add() did not return correct item for sorted index 1");
@@ -651,8 +659,16 @@ class ArrayCollectionTest extends Test {
 	public function testAddAtWithSortCompareFunction():Void {
 		var newItem = new MockItem("New Item", 1.5);
 		this._collection.sortCompareFunction = sortCompareFunction;
+		var addItemEvent = false;
+		var indexFromEvent = -1;
+		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
+			addItemEvent = true;
+			indexFromEvent = event.index;
+		});
 		this._collection.addAt(newItem, 1);
 
+		Assert.isTrue(addItemEvent);
+		Assert.equals(2, indexFromEvent);
 		Assert.equals(5, this._collection.length);
 		// the index we passed in isn't necessarily the same while sorted
 		Assert.equals(this._a, this._collection.get(0), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 0");
