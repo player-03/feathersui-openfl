@@ -176,6 +176,12 @@ class HierarchicalCollectionEvent extends Event {
 		The location of the item in the collection that is associated with this
 		event, or `null`, if there is no specific item.
 
+		If the collection has a `filterFunction`, the location is based on the
+		set of items that are currently visible.
+
+		If the collection has a `sortCompareFunction`, the location is based on
+		the order of items when sorted.
+
 		@since 1.0.0
 	**/
 	public var location:Array<Int>;

@@ -176,6 +176,12 @@ class FlatCollectionEvent extends Event {
 		The index of the item in the collection that is associated with this
 		event, or `null`, if there is no specific item.
 
+		If the collection has a `filterFunction`, the index is based on the set
+		of items that are currently visible.
+
+		If the collection has a `sortCompareFunction`, the index is based on the
+		order of items when sorted.
+
 		@since 1.0.0
 	**/
 	public var index:Int;
