@@ -143,6 +143,8 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 
 	private var _root:Branch<T> = null;
 
+	private var _branchPool:Array<Branch<T>> = [];
+
 	private var _pendingRefresh:Bool = false;
 
 	private var _filterFunction:(T) -> Bool = null;
@@ -226,20 +228,22 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 			throw new RangeError('Could not set item at location $location');
 		}
 		var removedItem:Null<T> = index < branch.length ? branch.get(index) : null;
-		branch.set(index, item, this._itemToChildren);
-		this.refreshFilterAndSort(branch);
-		var newLocation:Array<Int> = location.slice(0, location.length - 1);
-		switch ([removedItem != null, branch.find(item, newLocation)]) {
+		var newIndex = branch.set(index, item, this._itemToChildren);
+		switch ([removedItem != null, newIndex >= 0]) {
 			case [true, true]:
-				if (location.length == newLocation.length && location[location.length - 1] == newLocation[newLocation.length - 1]) {
+				if (index == newIndex) {
 					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REPLACE_ITEM, location, item, removedItem);
 				} else {
 					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ITEM, location, null, removedItem);
+					var newLocation = location.splice(0, location.length - 1);
+					newLocation.push(newIndex);
 					HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, newLocation, item);
 				}
 				FeathersEvent.dispatch(this, Event.CHANGE);
 			case [false, true]:
-				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, newLocation, item);
+				location.pop();
+				location.push(newIndex);
+				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, item);
 				FeathersEvent.dispatch(this, Event.CHANGE);
 			case [true, false]:
 				HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ITEM, location, null, removedItem);
@@ -288,16 +292,16 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 	**/
 	public function addAt(itemToAdd:T, location:Array<Int>):Void {
 		var branch = this.getBranchContaining(location);
-		var sourceIndex = branch.getSourceIndex(location[location.length - 1]);
-		if (sourceIndex < 0 || sourceIndex > branch.items.length) {
+		var index:Int = location[location.length - 1];
+		if (index < 0 || index > branch.length) {
 			throw new RangeError('Item cannot be added at location: ${location}');
 		}
-		branch.items.insert(sourceIndex, itemToAdd);
-		branch.children.insert(sourceIndex, null);
-		branch.refreshChildren(this._itemToChildren);
-		this.refreshFilterAndSort(branch);
-		HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, itemToAdd);
-		FeathersEvent.dispatch(this, Event.CHANGE);
+		index = branch.addAt(index, itemToAdd);
+		if (index >= 0) {
+			location[location.length - 1] = index;
+			HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.ADD_ITEM, location, itemToAdd);
+			FeathersEvent.dispatch(this, Event.CHANGE);
+		}
 	}
 
 	/**
@@ -305,14 +309,10 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 	**/
 	public function removeAt(location:Array<Int>):T {
 		var branch = this.getBranchContaining(location);
-		var sourceIndex = branch.getSourceIndex(location[location.length - 1]);
-		if (sourceIndex < 0 || sourceIndex >= branch.items.length) {
+		var removedItem = branch.removeAt(location[location.length - 1]);
+		if (removedItem == null) {
 			throw new RangeError('Item not found at location: ${location}');
 		}
-		var removedItem = branch.items[sourceIndex];
-		branch.items.splice(sourceIndex, 1);
-		branch.children.splice(sourceIndex, 1);
-		this.refreshFilterAndSort(branch);
 		HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ITEM, location, null, removedItem);
 		FeathersEvent.dispatch(this, Event.CHANGE);
 		return removedItem;
@@ -334,20 +334,16 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 		@see `feathers.data.IHierarchicalCollection.removeAll`
 	**/
 	public function removeAll(?location:Array<Int>):Void {
-		if (this._pendingRefresh || this._root == null) {
-			this.refreshFilterAndSort();
+		var branch:Branch<T> = this._root;
+		if (location != null) {
+			branch = this.getBranchAt(location);
+		} else if (branch == null) {
+			this._root = branch = new Branch<T>(this._array, this);
 		}
-		var branch = location != null && location.length > 0 ? this.getBranchAt(location) : this._root;
-		if (branch.items.length == 0) {
-			return;
+		if (branch.removeAll()) {
+			HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ALL, location);
+			FeathersEvent.dispatch(this, Event.CHANGE);
 		}
-		resizeArray(branch.items, 0);
-		resizeArray(branch.children, 0);
-		if (branch.displayOrder != null) {
-			resizeArray(branch.displayOrder, 0);
-		}
-		HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.REMOVE_ALL, location);
-		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
 
 	/**
@@ -402,58 +398,20 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 		output.writeObject(this.array);
 	}
 
+	@:access(feathers.data.Branch._sourceItems)
 	private function refreshFilterAndSort(?branch:Branch<T>):Void {
-		// refresh all by default, only clear _pendingRefresh if refreshing all
+		// only clear `_pendingRefresh` if refreshing all
 		if (branch == null || branch == this._root) {
 			this._pendingRefresh = false;
 			if (this._root == null) {
-				this._root = new Branch(this._array, this._itemToChildren);
+				this._root = new Branch<T>(this._array, this);
+			} else {
+				this._root._sourceItems = this._array;
 			}
 			branch = this._root;
 		}
 
-		if (this._filterFunction != null || this._sortCompareFunction != null) {
-			this.refreshFilterAndSortInternal(branch);
-		} else {
-			branch.removeDisplayOrder();
-		}
-	}
-
-	private function refreshFilterAndSortInternal(branch:Branch<T>):Void {
-		var items = branch.items;
-		var displayOrder = branch.displayOrder;
-		branch.displayOrder = null;
-		if (displayOrder == null) {
-			displayOrder = [];
-		}
-		if (this._filterFunction == null) {
-			resizeArray(displayOrder, items.length);
-			for (i in 0...items.length) {
-				displayOrder[i] = i;
-			}
-		} else {
-			var newLength:Int = 0;
-			for (i in 0...items.length) {
-				if (this._filterFunction(items[i])) {
-					displayOrder[newLength] = i;
-					newLength++;
-				}
-			}
-			resizeArray(displayOrder, newLength);
-		}
-		if (this._sortCompareFunction != null) {
-			function sortCompareFunction(a:Int, b:Int):Int {
-				return this._sortCompareFunction(items[a], items[b]);
-			}
-			displayOrder.sort(sortCompareFunction);
-		}
-		branch.displayOrder = displayOrder;
-
-		for (index in displayOrder) {
-			if (branch.children[index] != null) {
-				refreshFilterAndSortInternal(branch.children[index]);
-			}
-		}
+		branch.refreshFilterAndSort();
 	}
 
 	/**
@@ -514,57 +472,56 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 	}
 }
 
+@:access(feathers.data.ArrayHierarchicalCollection._branchPool)
 private class Branch<T> {
 	/**
-		Child branches, in the same order as `items`. If a child is not a
-		branch, that entry will be null.
+		Child branches, in the same order as `displayItems`. Contains `null` for
+		items that aren't branches.
 	**/
-	public var children:Array<Branch<T>>;
+	private var _children:Array<Branch<T>>;
+
+	private var _collection:ArrayHierarchicalCollection<T>;
 
 	/**
-		Indices in `items`, after filtering and sorting. For instance, if
-		`items` is `["red", "green", "blue"]` and an alphabetical sort is used,
-		this will be `[2, 1, 0]` because "blue" (`items[2]`) is first and "red"
-		(`items[0]`) is last.
-
-		If no filtering and sorting is applied, this will be null.
+		The items in this branch, after filtering and sorting. Will be defined
+		even if `sourceItems` is null.
 	**/
-	public var displayOrder:Array<Int> = null;
-
-	/**
-		The items in this branch, before filtering and sorting.
-	**/
-	public var items:Array<T>;
+	private var _displayItems:Array<T>;
 
 	public var length(get, never):Int;
 
 	private inline function get_length():Int {
-		return displayOrder != null ? displayOrder.length : items.length;
+		return this._displayItems.length;
 	}
 
-	public inline function new(items:Array<T>, itemToChildren:(T) -> Array<T>) {
-		this.items = items;
-		this.children = [];
-		this.refreshChildren(itemToChildren);
+	/**
+		This item's children, before filtering and sorting.
+	**/
+	private var _sourceItems:Array<T>;
+
+	public inline function new(items:Array<T>, collection:ArrayHierarchicalCollection<T>) {
+		this._sourceItems = items;
+		this._collection = collection;
+		this._displayItems = [];
+		this._children = [];
+	}
+
+	public function addAt(index:Int, item:T):Int {
+		var sourceIndex:Int = getSourceIndex(index);
+		if (sourceIndex >= 0 && sourceIndex <= this._sourceItems.length) {
+			this._sourceItems.insert(sourceIndex, item);
+			this.refreshFilterAndSort();
+			return this._displayItems.indexOf(item);
+		} else {
+			throw new RangeError('Index $sourceIndex is out of range 0...${this._sourceItems.length}');
+		}
 	}
 
 	public function contains(item:T):Bool {
-		if (displayOrder != null) {
-			for (index in displayOrder) {
-				if (index < 0 || index >= this.items.length) {
-					continue;
-				}
-				if (this.items[index] == item || this.children[index] != null
-					&& this.children[index].contains(item)) {
-					return true;
-				}
-			}
-			return false;
-		}
-		if (this.items.indexOf(item) >= 0) {
+		if (this._displayItems.indexOf(item) >= 0) {
 			return true;
 		}
-		for (child in children) {
+		for (child in this._children) {
 			if (child != null && child.contains(item)) {
 				return true;
 			}
@@ -572,122 +529,162 @@ private class Branch<T> {
 		return false;
 	}
 
-	public function find(item:T, result:Array<Int>):Bool {
-		if (this.displayOrder != null) {
-			for (displayIndex in 0...this.displayOrder.length) {
-				if (this.findAtIndex(item, this.displayOrder[displayIndex], displayIndex, result)) {
-					return true;
+	public function dispose():Void {
+		if (this._sourceItems != null) {
+			this._sourceItems = null;
+			resizeArray(this._displayItems, 0);
+			for (child in this._children) {
+				if (child != null) {
+					child.dispose();
 				}
 			}
-		} else {
-			for (index in 0...this.items.length) {
-				if (this.findAtIndex(item, index, index, result)) {
-					return true;
-				}
-			}
+			resizeArray(this._children, 0);
+			this._collection._branchPool.push(this);
 		}
-
-		return false;
 	}
 
-	private function findAtIndex(item:T, sourceIndex:Int, displayIndex:Int, result:Array<Int>):Bool {
-		if (sourceIndex < 0 || sourceIndex >= this.items.length) {
-			return false;
-		}
-
-		if (this.items[sourceIndex] == item) {
-			result.push(displayIndex);
+	public function find(item:T, result:Array<Int>):Bool {
+		var index:Int = this._displayItems.indexOf(item);
+		if (index >= 0) {
+			result.push(index);
 			return true;
 		}
 
-		var child = this.children[sourceIndex];
-		if (child != null) {
-			var resultLength = result.length;
-			result.push(displayIndex);
-			if (child.find(item, result)) {
-				return true;
+		for (index in 0...this._children.length) {
+			var child = this._children[index];
+			if (child != null) {
+				result.push(index);
+				if (child.find(item, result)) {
+					return true;
+				}
+				result.pop();
 			}
-			result.pop();
 		}
 
 		return false;
 	}
 
 	public function get(index:Int):T {
-		index = this.getSourceIndex(index);
-		if (index >= 0 && index < this.items.length) {
-			return this.items[index];
+		if (index >= 0 && index < this._displayItems.length) {
+			return this._displayItems[index];
 		} else {
-			throw new RangeError('Index $index is out of range 0...${this.items.length}');
+			throw new RangeError('Index $index is out of range 0...${this._displayItems.length}');
 		}
 	}
 
 	public function getChildren(index:Int):Branch<T> {
-		index = this.getSourceIndex(index);
-		if (index >= 0 && index < this.children.length) {
-			return this.children[index];
+		if (index >= 0 && index < this._children.length) {
+			return this._children[index];
 		} else {
 			return null;
 		}
 	}
+	
+	private inline function getSourceIndex(index:Int):Int {
+		var sourceIndex:Int = -1;
+		if (index == this._displayItems.length) {
+			sourceIndex = this._sourceItems.length;
+		} else if (index >= 0 && index < this._displayItems.length) {
+			sourceIndex = this._sourceItems.indexOf(this._displayItems[index]);
+		}
+		return sourceIndex;
+	}
 
-	public inline function getSourceIndex(index:Int):Int {
-		if (this.displayOrder != null) {
-			if (index >= 0 && index < this.displayOrder.length) {
-				return this.displayOrder[index];
-			} else {
-				return -1;
-			}
+	public inline function isBranch():Bool {
+		return this._sourceItems != null;
+	}
+
+	public function set(index:Int, item:T, itemToChildren:(T) -> Array<T>):Int {
+		var sourceIndex:Int = getSourceIndex(index);
+		if (sourceIndex >= 0 && sourceIndex <= this._sourceItems.length) {
+			this._sourceItems[sourceIndex] = item;
+			this.refreshFilterAndSort();
+			return this._displayItems.indexOf(item);
 		} else {
-			return index;
+			throw new RangeError('Index $sourceIndex is out of range 0...${this._sourceItems.length}');
 		}
 	}
 
-	public function set(index:Int, value:T, itemToChildren:(T) -> Array<T>):Void {
-		var sourceIndex = this.getSourceIndex(index);
-		if (sourceIndex >= 0 && sourceIndex <= this.items.length) {
-			this.items[sourceIndex] = value;
-			this.refreshChild(sourceIndex, value, itemToChildren);
-		} else if (this.displayOrder != null && index == this.displayOrder.length) {
-			this.items.push(value);
-			this.refreshChild(this.items.length - 1, value, itemToChildren);
-		} else {
-			throw new RangeError('Index $sourceIndex is out of range 0...${this.items.length}');
+	public function removeAll():Bool {
+		if (this._sourceItems.length == 0) {
+			this.refreshFilterAndSort();
+			return false;
 		}
+		resizeArray(this._sourceItems, 0);
+		this.refreshFilterAndSort();
+		return true;
 	}
 
-	private inline function refreshChild(sourceIndex:Int, value:T, itemToChildren:(T) -> Array<T>):Void {
-		var childItems = itemToChildren(value);
-		if (childItems == null) {
-			this.children[sourceIndex] = null;
-		} else {
-			var child = this.children[sourceIndex];
-			if (child != null) {
-				child.items = childItems;
-			} else {
-				this.children[sourceIndex] = child = new Branch(childItems, itemToChildren);
-			}
-			child.refreshChildren(itemToChildren);
+	public function removeAt(index:Int):Null<T> {
+		if (index < 0 || index >= this._displayItems.length) {
+			return null;
 		}
+		var removedItem:T = this._displayItems[index];
+		this._displayItems.splice(index, 1);
+		this._children.splice(index, 1);
+		this._sourceItems.remove(removedItem);
+		return removedItem;
 	}
 
-	public function refreshChildren(itemToChildren:(T) -> Array<T>):Void {
-		if (itemToChildren == null) {
+	public function refreshFilterAndSort():Void {
+		if (!this.isBranch()) {
 			return;
 		}
-		if (this.children.length > this.items.length) {
-			resizeArray(this.children, this.items.length);
-		}
-		for (i in 0...this.items.length) {
-			refreshChild(i, this.items[i], itemToChildren);
-		}
-	}
 
-	public function removeDisplayOrder():Void {
-		this.displayOrder = null;
-		for (child in this.children) {
+		// reset `_displayItems` to match `_sourceItems`
+		resizeArray(this._displayItems, this._sourceItems.length);
+		for (i in 0...this._sourceItems.length) {
+			this._displayItems[i] = this._sourceItems[i];
+		}
+
+		// filter and sort, if applicable
+		var filterFunction = this._collection.filterFunction;
+		if (filterFunction != null) {
+			var newLength:Int = 0;
+			for (i in 0...this._sourceItems.length) {
+				if (filterFunction(this._sourceItems[i])) {
+					this._displayItems[newLength] = this._sourceItems[i];
+					newLength++;
+				}
+			}
+			resizeArray(this._displayItems, newLength);
+		}
+		var sortCompareFunction = this._collection.sortCompareFunction;
+		if (sortCompareFunction != null) {
+			this._displayItems.sort(sortCompareFunction);
+		}
+
+		var itemToChildren = this._collection.itemToChildren;
+		if (itemToChildren == null) {
+			resizeArray(this._children, 0);
+			return;
+		}
+
+		// use `_displayItems` to populate and refresh `_children`
+		for (i in 0...this._displayItems.length) {
+			var sourceItems:Array<T> = itemToChildren(this._displayItems[i]);
+			var child:Branch<T> = i < this._children.length ? this._children[i] : null;
+			if (sourceItems == null) {
+				if (child != null) {
+					child.dispose();
+				}
+				this._children[i] = null;
+				continue;
+			}
+			if (child == null) {
+				child = this._collection._branchPool.pop();
+				if (child == null) {
+					child = new Branch<T>(null, this._collection);
+				}
+			}
+			this._children[i] = child;
+			child._sourceItems = sourceItems;
+			child.refreshFilterAndSort();
+		}
+		while (this._children.length > this._displayItems.length) {
+			var child:Branch<T> = this._children.pop();
 			if (child != null) {
-				child.removeDisplayOrder();
+				child.dispose();
 			}
 		}
 	}
