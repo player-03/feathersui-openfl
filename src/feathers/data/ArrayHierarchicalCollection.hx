@@ -482,7 +482,7 @@ private class Branch<T> {
 
 	/**
 		The items in this branch, after filtering and sorting. Will be defined
-		even if `sourceItems` is null.
+		even if `_sourceItems` is null.
 	**/
 	private var _displayItems:Array<T>;
 
@@ -493,7 +493,7 @@ private class Branch<T> {
 	}
 
 	/**
-		This item's children, before filtering and sorting.
+		The items in this branch, before filtering and sorting.
 	**/
 	private var _sourceItems:Array<T>;
 
