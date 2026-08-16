@@ -364,9 +364,7 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 		@see `feathers.data.IHierarchicalCollection.updateAll`
 	**/
 	public function updateAll():Void {
-		if (this._filterFunction != null || this._sortCompareFunction != null) {
-			this._pendingRefresh = true;
-		}
+		this._pendingRefresh = true;
 		HierarchicalCollectionEvent.dispatch(this, HierarchicalCollectionEvent.UPDATE_ALL, null);
 		FeathersEvent.dispatch(this, Event.CHANGE);
 	}
