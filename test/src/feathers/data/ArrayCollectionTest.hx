@@ -10,6 +10,7 @@ package feathers.data;
 
 import feathers.events.FlatCollectionEvent;
 import haxe.io.Error;
+import haxe.PosInfos;
 import openfl.Lib;
 import openfl.errors.RangeError;
 import openfl.events.Event;
@@ -61,6 +62,39 @@ class ArrayCollectionTest extends Test {
 		return 0;
 	}
 
+	/**
+		Asserts that `collection` has the same items as `items`, in the same
+		order, and that both have the same length.
+		@param message The message to print if a test fails. Additional
+		information about the failure will be appended to the end.
+		@return True if all tests passed, false if any failed.
+	**/
+	private function assertCollectionMatches(items:Array<MockItem>, ?collection:ArrayCollection<MockItem>, ?message:String = "", ?pos:PosInfos):Bool {
+		if (collection == null) {
+			collection = this._collection;
+		}
+		if (items.length == collection.length) {
+			Assert.pass();
+		} else {
+			Assert.fail(message + '; length mismatch: expected ${items.length}, got ${collection.length}', pos);
+			return false;
+		}
+		var result:Bool = true;
+		for (i in 0...items.length) {
+			var expected:MockItem = items[i];
+			var actual:MockItem = collection.get(i);
+			if (expected == actual) {
+				Assert.pass();
+			} else {
+				result = false;
+				var expectedString:String = expected != null ? expected.text : "null";
+				var actualString:String = actual != null ? actual.text : "null";
+				Assert.fail(message + '; expected $expected at index $i, got $actual', pos);
+			}
+		}
+		return result;
+	}
+
 	public function testIndexOf():Void {
 		Assert.equals(0, this._collection.indexOf(this._a), "Collection indexOf() returns wrong index");
 		Assert.equals(1, this._collection.indexOf(this._b), "Collection indexOf() returns wrong index");
@@ -108,7 +142,7 @@ class ArrayCollectionTest extends Test {
 		this._collection.add(itemToAdd);
 		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after adding to collection");
 		Assert.isTrue(addItemEvent, "FlatCollectionEvent.ADD_ITEM must be dispatched after adding to collection");
-		Assert.equals(originalLength + 1, this._collection.length, "Collection length must change after adding to collection");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd], "Collection must update after adding to collection");
 		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Adding item to collection returns incorrect index");
 		Assert.equals(expectedIndex, indexFromEvent, "Adding item to collection returns incorrect index in event");
 	}
