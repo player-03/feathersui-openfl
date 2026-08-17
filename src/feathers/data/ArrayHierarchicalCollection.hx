@@ -451,7 +451,7 @@ class ArrayHierarchicalCollection<T> extends EventDispatcher implements IHierarc
 		for (i in 0...location.length - 1) {
 			branch = branch.getChildren(location[i]);
 			if (branch == null) {
-				throw new RangeError('Item not found at location: ${location.slice(0, i + 1)}');
+				throw new RangeError('Item not found at location: ${location.slice(0, i + 2)}');
 			}
 		}
 		return branch;
