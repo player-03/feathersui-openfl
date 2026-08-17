@@ -506,10 +506,18 @@ private class Branch<T> {
 
 	public function addAt(index:Int, item:T):Int {
 		var sourceIndex:Int = getSourceIndex(index);
-		if (sourceIndex >= 0 && sourceIndex <= this._sourceItems.length) {
+		var oldLength:Int = this._sourceItems.length;
+		if (sourceIndex >= 0 && sourceIndex <= oldLength) {
 			this._sourceItems.insert(sourceIndex, item);
-			this.refreshFilterAndSort();
-			return this._displayItems.indexOf(item);
+			this.refreshDisplayItems();
+			var newIndex:Int = this._displayItems.indexOf(item);
+			if (newIndex < 0) {
+				// no change to children
+			} else {
+				// everything after the insertion index shifted
+				this.refreshChildren(newIndex);
+			}
+			return newIndex;
 		} else {
 			throw new RangeError('Index $sourceIndex is out of range 0...${this._sourceItems.length}');
 		}
@@ -594,10 +602,24 @@ private class Branch<T> {
 
 	public function set(index:Int, item:T, itemToChildren:(T) -> Array<T>):Int {
 		var sourceIndex:Int = getSourceIndex(index);
-		if (sourceIndex >= 0 && sourceIndex <= this._sourceItems.length) {
+		var oldLength:Int = this._sourceItems.length;
+		if (sourceIndex >= 0 && sourceIndex <= oldLength) {
 			this._sourceItems[sourceIndex] = item;
-			this.refreshFilterAndSort();
-			return this._displayItems.indexOf(item);
+			this.refreshDisplayItems();
+			var newIndex:Int = this._displayItems.indexOf(item);
+			if (newIndex < 0) {
+				// everything after the removed index shifted
+				this.refreshChildren(index);
+			} else if (sourceIndex == oldLength) {
+				// everything after (and including) the added index shifted
+				this.refreshChildren(newIndex);
+			} else {
+				// everything between (and including) the two indices shifted
+				var startIndex:Int = index < newIndex ? index : newIndex;
+				var endIndex:Int = index >= newIndex ? index : newIndex;
+				this.refreshChildren(startIndex, endIndex);
+			}
+			return newIndex;
 		} else {
 			throw new RangeError('Index $sourceIndex is out of range 0...${this._sourceItems.length}');
 		}
@@ -633,13 +655,21 @@ private class Branch<T> {
 			return;
 		}
 
-		// reset `_displayItems` to match `_sourceItems`
+		inline refreshDisplayItems();
+		refreshChildren();
+	}
+
+	/**
+		Resets `_displayItems` to match `_sourceItems`, then filters and sorts.
+
+		Does not update `_children`. For that, also call `refreshChildren()`.
+	**/
+	private function refreshDisplayItems():Void {
 		resizeArray(this._displayItems, this._sourceItems.length);
 		for (i in 0...this._sourceItems.length) {
 			this._displayItems[i] = this._sourceItems[i];
 		}
 
-		// filter and sort, if applicable
 		var filterFunction = this._collection.filterFunction;
 		if (filterFunction != null) {
 			var newLength:Int = 0;
@@ -655,15 +685,31 @@ private class Branch<T> {
 		if (sortCompareFunction != null) {
 			this._displayItems.sort(sortCompareFunction);
 		}
+	}
 
+	/**
+		Populates and refreshs `_children` to match `_displayItems`.
+
+		If `startIndex` and `endIndex` are defined, only refreshes the children
+		from `startIndex...endIndex+1` (i.e., up to and including `endIndex`).
+	**/
+	private function refreshChildren(startIndex:Int = 0, endIndex:Int = -1):Void {
 		var itemToChildren = this._collection.itemToChildren;
 		if (itemToChildren == null) {
 			resizeArray(this._children, 0);
 			return;
 		}
 
-		// use `_displayItems` to populate and refresh `_children`
-		for (i in 0...this._displayItems.length) {
+		if (startIndex < 0) {
+			startIndex = 0;
+		}
+		if (endIndex < 0 || endIndex >= this._displayItems.length) {
+			endIndex = this._displayItems.length;
+		} else {
+			endIndex++;
+		}
+
+		for (i in startIndex...endIndex) {
 			var sourceItems:Array<T> = itemToChildren(this._displayItems[i]);
 			var child:Branch<T> = i < this._children.length ? this._children[i] : null;
 			if (sourceItems == null) {
