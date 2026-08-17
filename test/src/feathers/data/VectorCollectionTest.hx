@@ -66,7 +66,7 @@ class VectorCollectionTest extends Test {
 	public function testLength():Void {
 		Assert.equals(4, this._collection.length);
 		Assert.equals(0, new VectorCollection<MockItem>().length);
-		Assert.equals(0, new VectorCollection<MockItem>([]).length);
+		Assert.equals(0, new VectorCollection<MockItem>(Vector.ofArray([])).length);
 	}
 
 	public function testIndexOf():Void {
