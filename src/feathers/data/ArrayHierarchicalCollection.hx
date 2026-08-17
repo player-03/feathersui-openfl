@@ -619,6 +619,10 @@ private class Branch<T> {
 		}
 		var removedItem:T = this._displayItems[index];
 		this._displayItems.splice(index, 1);
+		var child:Branch<T> = this._children[index];
+		if (child != null) {
+			child.dispose();
+		}
 		this._children.splice(index, 1);
 		this._sourceItems.remove(removedItem);
 		return removedItem;
