@@ -8,6 +8,7 @@
 
 package feathers.data;
 
+import feathers.data.VectorCollection;
 import openfl.Vector;
 import feathers.events.FlatCollectionEvent;
 import haxe.io.Error;
@@ -60,6 +61,12 @@ class VectorCollectionTest extends Test {
 			return 1;
 		}
 		return 0;
+	}
+
+	public function testLength():Void {
+		Assert.equals(4, this._collection.length);
+		Assert.equals(0, new VectorCollection<MockItem>().length);
+		Assert.equals(0, new VectorCollection<MockItem>([]).length);
 	}
 
 	public function testIndexOf():Void {
