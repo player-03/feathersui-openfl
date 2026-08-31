@@ -69,7 +69,7 @@ class ArrayCollectionTest extends Test {
 		information about the failure will be appended to the end.
 		@return True if all tests passed, false if any failed.
 	**/
-	private function assertCollectionMatches(items:Array<MockItem>, ?collection:ArrayCollection<MockItem>, ?message:String = "", ?pos:PosInfos):Bool {
+	private function assertCollectionMatches(items:Array<MockItem>, ?collection:ArrayCollection<MockItem>, message:String, ?pos:PosInfos):Bool {
 		if (collection == null) {
 			collection = this._collection;
 		}
