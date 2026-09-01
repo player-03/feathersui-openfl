@@ -186,7 +186,7 @@ class ArrayCollectionTest extends Test {
 					var expectedField:Dynamic = Reflect.field(expected, field);
 					var eventField:Dynamic = Reflect.field(event, field);
 					allTestsPassed = Assert.equals(expectedField, eventField,
-						'After $message, $printableEventType event must have $field == $expectedField, got $field == $eventField', pos)
+						'After $message, $printableEventType must have $field == $expectedField, got $field == $eventField', pos)
 						&& allTestsPassed;
 				}
 			}
