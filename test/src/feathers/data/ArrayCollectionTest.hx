@@ -158,6 +158,12 @@ class ArrayCollectionTest extends Test {
 		return result;
 	}
 
+	public function testLength():Void {
+		Assert.equals(4, this._collection.length);
+		Assert.equals(0, new ArrayCollection().length);
+		Assert.equals(0, new ArrayCollection([]).length);
+	}
+
 	public function testIndexOf():Void {
 		Assert.equals(0, this._collection.indexOf(this._a), "Collection indexOf() returns wrong index");
 		Assert.equals(1, this._collection.indexOf(this._b), "Collection indexOf() returns wrong index");
