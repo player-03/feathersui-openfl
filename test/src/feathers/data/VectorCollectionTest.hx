@@ -25,8 +25,12 @@ class VectorCollectionTest extends IFlatCollectionTest {
 	override public function setup():Void {
 		super.setup();
 
+		#if air
+		this._vectorCollection = cast this._collection;
+		#else
 		// Cast type parameters must be Dynamic
 		this._vectorCollection = cast cast(this._collection, VectorCollection<Dynamic>);
+		#end
 	}
 
 	public function testResetVector():Void {
