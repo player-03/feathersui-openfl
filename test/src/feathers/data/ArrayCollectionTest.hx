@@ -88,18 +88,16 @@ class ArrayCollectionTest extends Test {
 	/**
 		Asserts that `collection` has the same items as `items`, in the same
 		order, and that both have the same length.
-		@param message The message to print if a test fails. Additional
-		information about the failure will be appended to the end.
 		@return True if all tests passed, false if any failed.
 	**/
-	private function assertCollectionMatches(items:Array<MockItem>, ?collection:ArrayCollection<MockItem>, message:String, ?pos:PosInfos):Bool {
+	private function assertCollectionMatches(items:Array<MockItem>, ?collection:ArrayCollection<MockItem>, ?pos:PosInfos):Bool {
 		if (collection == null) {
 			collection = this._collection;
 		}
 		if (items.length == collection.length) {
 			Assert.pass();
 		} else {
-			Assert.fail(message + '; length mismatch: expected ${items.length}, got ${collection.length}', pos);
+			Assert.fail('Collection should have length ${items.length}, got ${collection.length}', pos);
 			return false;
 		}
 		var result:Bool = true;
@@ -112,7 +110,7 @@ class ArrayCollectionTest extends Test {
 				result = false;
 				var expectedString:String = expected != null ? expected.text : "null";
 				var actualString:String = actual != null ? actual.text : "null";
-				Assert.fail(message + '; expected $expected at index $i, got $actual', pos);
+				Assert.fail('Expected $expected at index $i, got $actual', pos);
 			}
 		}
 		return result;
@@ -123,11 +121,9 @@ class ArrayCollectionTest extends Test {
 		order with the given fields, and no other events.
 		@param events The events that should have been dispatched, including any
 		fields they should have.
-		@param message A description of what should have triggered the listed
-		events. More details will be appended to this.
 		@return True if all tests passed, false if any failed.
 	**/
-	private function assertEventsDispatched(expectedEvents:Array<Dynamic>, ?actualEvents:Array<Event>, message:String, ?pos:PosInfos):Bool {
+	private function assertEventsDispatched(expectedEvents:Array<Dynamic>, ?actualEvents:Array<Event>, ?pos:PosInfos):Bool {
 		if (actualEvents == null) {
 			actualEvents = this._events;
 		}
@@ -137,14 +133,14 @@ class ArrayCollectionTest extends Test {
 		for (i in 0...expectedEvents.length) {
 			var expected = expectedEvents[i];
 			if (i >= actualEvents.length) {
-				Assert.fail('$message, collection must dispatch ${expected.type} event at index $i', pos);
+				Assert.fail('Collection must dispatch ${expected.type} event at index $i', pos);
 				allTestsPassed = false;
 				continue;
 			}
 
 			var actual = actualEvents[i];
 			if (expected.type != actual.type) {
-				Assert.fail('$message, collection must dispatch ${expected.type} event at index $i, got ${actual.type}', pos);
+				Assert.fail('Collection must dispatch ${expected.type} event at index $i, got ${actual.type}', pos);
 				allTestsPassed = false;
 				continue;
 			}
@@ -156,14 +152,14 @@ class ArrayCollectionTest extends Test {
 				var expectedField:Dynamic = Reflect.field(expected, field);
 				var actualField:Dynamic = Reflect.field(actual, field);
 				allTestsPassed = Assert.equals(expectedField, actualField,
-					'$message, ${actual.type} event at index $i must have $field == $expectedField, got $field == $actualField', pos)
+					'${actual.type} event (#$i) must have $field == $expectedField, got $field == $actualField', pos)
 					&& allTestsPassed;
 			}
 		}
 
 		for (i in expectedEvents.length...actualEvents.length) {
 			var actual = actualEvents[i];
-			Assert.fail('Collection must not dispatch ${actual.type} event at index $i after $message', pos);
+			Assert.fail('Collection must not dispatch ${actual.type} event (#$i)', pos);
 			allTestsPassed = false;
 		}
 
@@ -210,24 +206,24 @@ class ArrayCollectionTest extends Test {
 		var itemToAdd = new MockItem("New Item", 100);
 		var expectedIndex = this._collection.length;
 		this._collection.add(itemToAdd);
-		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd], "Collection must update after adding to collection");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd]);
 		this.assertEventsDispatched([
 			{type:FlatCollectionEvent.ADD_ITEM, index: expectedIndex, addedItem: itemToAdd},
 			{type:Event.CHANGE}
-		], "After adding item to collection");
-		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Adding item to collection returns incorrect index");
+		]);
+		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd));
 	}
 
 	public function testAddAt():Void {
 		var itemToAdd = new MockItem("New Item", 100);
 		var expectedIndex = 1;
 		this._collection.addAt(itemToAdd, expectedIndex);
-		this.assertCollectionMatches([this._a, itemToAdd, this._b, this._c, this._d], "Collection must update after adding to collection");
+		this.assertCollectionMatches([this._a, itemToAdd, this._b, this._c, this._d]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.ADD_ITEM, index: expectedIndex, addedItem: itemToAdd},
 			{type: Event.CHANGE}
-		], "After adding item to collection");
-		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Adding item to collection returns incorrect index");
+		]);
+		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd));
 
 		Assert.raises(function() {
 			this._collection.addAt(itemToAdd, 100);
@@ -241,12 +237,12 @@ class ArrayCollectionTest extends Test {
 		var itemToAdd = new MockItem("New Item", 100);
 		var expectedIndex = 1;
 		this._collection.set(expectedIndex, itemToAdd);
-		this.assertCollectionMatches([this._a, itemToAdd, this._c, this._d], "Collection must update after replacing in collection");
+		this.assertCollectionMatches([this._a, itemToAdd, this._c, this._d]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.REPLACE_ITEM, index: expectedIndex, addedItem: itemToAdd, removedItem: this._b},
 			{type: Event.CHANGE}
-		], "After replacing item in collection");
-		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Replacing item in collection returns incorrect index");
+		]);
+		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd));
 
 		Assert.raises(function() {
 			this._collection.set(100, itemToAdd);
@@ -260,12 +256,12 @@ class ArrayCollectionTest extends Test {
 		var itemToAdd = new MockItem("New Item", 100);
 		var originalLength = this._collection.length;
 		this._collection.set(originalLength, itemToAdd);
-		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd], "Collection must update after replacing in collection");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.ADD_ITEM, index: originalLength, addedItem: itemToAdd},
 			{type: Event.CHANGE}
-		], "After setting item after end of collection");
-		Assert.equals(originalLength, this._collection.indexOf(itemToAdd), "Setting item after end of collection returns incorrect index");
+		]);
+		Assert.equals(originalLength, this._collection.indexOf(itemToAdd));
 	}
 
 	public function testRemove():Void {
@@ -273,12 +269,12 @@ class ArrayCollectionTest extends Test {
 		var itemToRemove = this._b;
 		Assert.equals(itemToRemove, this._collection.get(expectedIndex));
 		this._collection.remove(itemToRemove);
-		this.assertCollectionMatches([this._a, this._c, this._d], "Collection must update after removing item");
+		this.assertCollectionMatches([this._a, this._c, this._d]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.REMOVE_ITEM, index: expectedIndex, removedItem: itemToRemove},
 			{type: Event.CHANGE}
-		], "After removing item from collection");
-		Assert.equals(-1, this._collection.indexOf(itemToRemove), "Removing item from collection returns incorrect index");
+		]);
+		Assert.equals(-1, this._collection.indexOf(itemToRemove));
 	}
 
 	public function testRemoveAt():Void {
@@ -286,12 +282,12 @@ class ArrayCollectionTest extends Test {
 		var itemToRemove = this._b;
 		Assert.equals(itemToRemove, this._collection.get(expectedIndex));
 		this._collection.removeAt(expectedIndex);
-		this.assertCollectionMatches([this._a, this._c, this._d], "Collection must update after removing item");
+		this.assertCollectionMatches([this._a, this._c, this._d]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.REMOVE_ITEM, index: expectedIndex, removedItem: itemToRemove},
 			{type: Event.CHANGE}
-		], "After removing item from collection");
-		Assert.equals(-1, this._collection.indexOf(itemToRemove), "Removing item from collection returns incorrect index");
+		]);
+		Assert.equals(-1, this._collection.indexOf(itemToRemove));
 
 		Assert.raises(function() {
 			this._collection.removeAt(100);
@@ -303,48 +299,48 @@ class ArrayCollectionTest extends Test {
 
 	public function testRemoveAll():Void {
 		this._collection.removeAll();
-		this.assertCollectionMatches([], "Collection must be empty after removing all");
+		this.assertCollectionMatches([]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.REMOVE_ALL},
 			{type: Event.CHANGE}
-		], "After removing all from collection");
+		]);
 	}
 
 	public function testRemoveAllWithEmptyCollection():Void {
 		this._collection = new ArrayCollection();
 		this.addCollectionEventListeners(this._collection, this._events);
 		this._collection.removeAll();
-		this.assertCollectionMatches([], "Collection must be empty after removing all");
-		this.assertEventsDispatched([], "After removing all from empty collection");
+		this.assertCollectionMatches([]);
+		this.assertEventsDispatched([]);
 	}
 
 	public function testResetArray():Void {
 		var newArray = [this._c, this._b, this._a];
 		this._collection.array = newArray;
-		this.assertCollectionMatches([this._c, this._b, this._a], "Collection must contain given data after setting collection source");
+		this.assertCollectionMatches([this._c, this._b, this._a]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.RESET},
 			{type: Event.CHANGE}
-		], "After setting collection source");
+		]);
 	}
 
 	public function testResetArrayToNull():Void {
 		this._collection.array = null;
-		this.assertCollectionMatches([], "Setting collection source to null should replace with an empty array");
+		this.assertCollectionMatches([]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.RESET},
 			{type: Event.CHANGE}
-		], "After setting collection source to null");
+		]);
 	}
 
 	public function testUpdateAt():Void {
 		var expectedIndex = 1;
 		this._collection.updateAt(expectedIndex);
-		this.assertCollectionMatches([this._a, this._b, this._c, this._d], "Calling updateAt() should not change collection contents");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.UPDATE_ITEM, index: expectedIndex},
 			{type: Event.CHANGE}
-		], "After calling updateAt()");
+		]);
 
 		Assert.raises(function():Void {
 			this._collection.updateAt(100);
@@ -356,11 +352,11 @@ class ArrayCollectionTest extends Test {
 
 	public function testUpdateAll():Void {
 		this._collection.updateAll();
-		this.assertCollectionMatches([this._a, this._b, this._c, this._d], "Calling updateAll() should not change collection contents");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d]);
 		this.assertEventsDispatched([
 			{type: FlatCollectionEvent.UPDATE_ALL},
 			{type: Event.CHANGE}
-		], "After calling updateAll()");
+		]);
 	}
 
 	//--- filterFunction
