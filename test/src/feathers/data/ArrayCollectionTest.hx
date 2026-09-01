@@ -844,6 +844,6 @@ private class MockItem {
 	public var value:Float;
 
 	public function toString():String {
-		return 'MockItem("${this.text}")';
+		return 'MockItem("${this.text}", ${this.value})';
 	}
 }
