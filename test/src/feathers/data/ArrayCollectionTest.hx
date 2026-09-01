@@ -680,26 +680,24 @@ class ArrayCollectionTest extends Test {
 	public function testSortCompareFunctionAndFilterFunction():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		Assert.notEquals(this._collection.array.length, this._collection.length, "Collection length must not match source length if items are filtered");
-		Assert.equals(2, this._collection.length, "Collection length must account for filterFunction");
-		Assert.equals(this._d, this._collection.get(0), "Items must be filtered and sorted");
-		Assert.equals(this._b, this._collection.get(1), "Items must be filtered and sorted");
+		this.assertCollectionMatches([this._d, this._b]);
+		Assert.same([this._a, this._b, this._c, this._d], this._collection.array);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE},
+			{type: FlatCollectionEvent.SORT_CHANGE},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testSetSortCompareFunctionAndFilterFunctionToNull():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		// get an item so that we know the sorting was applied
-		Assert.equals(this._d, this._collection.get(0), "Collection with filterFunction must filter items");
+		this.assertCollectionMatches([this._d, this._b]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-		Assert.equals(this._collection.array.length, this._collection.length,
-			"Collection length must match source length after setting sortCompareFunction and filterFunction to null");
-		Assert.equals(this._a, this._collection.get(0), "Collection order is incorrect after setting sortCompareFunction and filterFunction to null");
-		Assert.equals(this._b, this._collection.get(1), "Collection order is incorrect after setting sortCompareFunction and filterFunction to null");
-		Assert.equals(this._c, this._collection.get(2), "Collection order is incorrect after setting sortCompareFunction and filterFunction to null");
-		Assert.equals(this._d, this._collection.get(3), "Collection order is incorrect after setting sortCompareFunction and filterFunction to null");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d]);
 	}
 
 	public function testContainsWithSortCompareFunctionAndFilterFunction():Void {
@@ -723,242 +721,116 @@ class ArrayCollectionTest extends Test {
 	}
 
 	public function testAddWithSortCompareFunctionAndFilterFunction():Void {
-		var newItem = new MockItem("New Item", 1.5);
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.add(newItem);
+		this.assertCollectionMatches([this._d, this._b]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(addItemEvent);
-		Assert.equals(1, indexFromEvent);
-		Assert.equals(3, this._collection.length);
-		Assert.equals(this._d, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for sorted index 0");
-		Assert.equals(newItem, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for sorted index 1");
-		Assert.equals(this._b, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for sorted index 2");
+		var newItem = new MockItem("New Item", 1.5);
+		this._collection.add(newItem);
+		this.assertCollectionMatches([this._d, newItem, this._b]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.ADD_ITEM, index: 1, addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(5, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for unsorted index 0");
-		Assert.equals(this._b, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for unsorted index 1");
-		Assert.equals(this._c, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for unsorted index 2");
-		Assert.equals(this._d, this._collection.get(3),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for unsorted index 3");
-		Assert.equals(newItem, this._collection.get(4),
-			"Collection with sortCompareFunction and filterFunction with add() did not return correct item for unsorted index 4");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d, newItem]);
 	}
 
 	public function testAddAtWithSortCompareFunctionAndFilterFunction():Void {
-		var newItem = new MockItem("New Item", 1.5);
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.addAt(newItem, 0);
+		this.assertCollectionMatches([this._d, this._b]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(addItemEvent);
-		// the sortCompareFunction prevents
-		Assert.equals(1, indexFromEvent);
-		Assert.equals(3, this._collection.length);
-		Assert.equals(this._d, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 0");
-		Assert.equals(newItem, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 1");
-		Assert.equals(this._b, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 2");
+		var newItem = new MockItem("New Item", 1.5);
+		this._collection.addAt(newItem, 0);
+		this.assertCollectionMatches([this._d, newItem, this._b]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.ADD_ITEM, index: 1, addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(5, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 0");
-		Assert.equals(this._b, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 1");
-		Assert.equals(this._c, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 2");
-		Assert.equals(newItem, this._collection.get(3),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 3");
-		Assert.equals(this._d, this._collection.get(4),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 4");
+		this.assertCollectionMatches([this._a, this._b, this._c, newItem, this._d]);
 	}
 
 	public function testRemoveWithSortCompareFunctionAndFilterFunction():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var removeItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
-			removeItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.remove(this._b);
+		this.assertCollectionMatches([this._d, this._b]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(removeItemEvent);
-		Assert.equals(1, indexFromEvent);
-		Assert.equals(1, this._collection.length);
-		Assert.equals(this._d, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for sorted index 0");
+		this._collection.remove(this._b);
+		this.assertCollectionMatches([this._d]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REMOVE_ITEM, index: 1, removedItem: this._b},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(3, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for unsorted index 0");
-		Assert.equals(this._c, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for unsorted index 1");
-		Assert.equals(this._d, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for unsorted index 2");
+		this.assertCollectionMatches([this._a, this._c, this._d]);
 	}
 
 	public function testRemoveAtWithSortCompareFunctionAndFilterFunction():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var removeItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
-			removeItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.removeAt(1);
+		this.assertCollectionMatches([this._d, this._b]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(removeItemEvent);
-		Assert.equals(1, indexFromEvent);
-		Assert.equals(1, this._collection.length);
-		Assert.equals(this._d, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for sorted index 0");
+		this._collection.removeAt(1);
+		this.assertCollectionMatches([this._d]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REMOVE_ITEM, index: 1, removedItem: this._b},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(3, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for unsorted index 0");
-		Assert.equals(this._c, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for unsorted index 1");
-		Assert.equals(this._d, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for unsorted index 2");
+		this.assertCollectionMatches([this._a, this._c, this._d]);
 	}
 
 	public function testSetWithSortCompareFunctionAndFilterFunction():Void {
-		var newItem = new MockItem("New Item", 0.5);
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var addIndexFromEvent = -1;
-		var removeItemEvent = false;
-		var removeIndexFromEvent = -1;
-		var replaceItemEvent = false;
-		var replaceIndexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			addIndexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
-			removeItemEvent = true;
-			removeIndexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
-			replaceItemEvent = true;
-			replaceIndexFromEvent = event.index;
-		});
-		this._collection.set(1, newItem);
+		this.assertCollectionMatches([this._d, this._b]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(addItemEvent);
-		Assert.isTrue(removeItemEvent);
-		Assert.isFalse(replaceItemEvent);
-		Assert.equals(0, addIndexFromEvent);
-		Assert.equals(1, removeIndexFromEvent);
-		Assert.equals(-1, replaceIndexFromEvent);
-		Assert.equals(2, this._collection.length);
-		Assert.equals(newItem, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 0");
-		Assert.equals(this._d, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 1");
+		var newItem = new MockItem("New Item", 0.5);
+		this._collection.set(1, newItem);
+		this.assertCollectionMatches([newItem, this._d]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REMOVE_ITEM, index: 1, removedItem: this._b},
+			{type: FlatCollectionEvent.ADD_ITEM, index: 0, addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(4, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 0");
-		Assert.equals(newItem, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 1");
-		Assert.equals(this._c, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 2");
-		Assert.equals(this._d, this._collection.get(3),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 3");
+		this.assertCollectionMatches([this._a, newItem, this._c, this._d]);
 	}
 
 	public function testSetWithSortCompareFunctionAndFilterFunctionAfterLast():Void {
-		var newItem = new MockItem("New Item", 0.5);
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var addIndexFromEvent = -1;
-		var removeItemEvent = false;
-		var removeIndexFromEvent = -1;
-		var replaceItemEvent = false;
-		var replaceIndexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			addIndexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
-			removeItemEvent = true;
-			removeIndexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
-			replaceItemEvent = true;
-			replaceIndexFromEvent = event.index;
-		});
-		this._collection.set(2, newItem);
+		this.assertCollectionMatches([this._d, this._b]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(addItemEvent);
-		Assert.isFalse(removeItemEvent);
-		Assert.isFalse(replaceItemEvent);
-		Assert.equals(0, addIndexFromEvent);
-		Assert.equals(-1, removeIndexFromEvent);
-		Assert.equals(-1, replaceIndexFromEvent);
-		Assert.equals(3, this._collection.length);
-		Assert.equals(newItem, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 0");
-		Assert.equals(this._d, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 1");
-		Assert.equals(this._b, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 2");
+		var newItem = new MockItem("New Item", 0.5);
+		this._collection.set(2, newItem);
+		this.assertCollectionMatches([newItem, this._d, this._b]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.ADD_ITEM, index: 0, addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(5, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 0");
-		Assert.equals(this._b, this._collection.get(1),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 1");
-		Assert.equals(this._c, this._collection.get(2),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 2");
-		Assert.equals(this._d, this._collection.get(3),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 3");
-		Assert.equals(newItem, this._collection.get(4),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 4");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d, newItem]);
 	}
 }
 
