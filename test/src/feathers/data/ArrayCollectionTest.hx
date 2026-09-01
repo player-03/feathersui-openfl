@@ -379,12 +379,14 @@ class ArrayCollectionTest extends Test {
 	//--- filterFunction
 
 	public function testFilterFunction():Void {
-		Assert.equals(this._collection.array.length, this._collection.length, "Collection length must match source length if unfiltered");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d]);
 		this._collection.filterFunction = filterFunction;
-		Assert.notEquals(this._collection.array.length, this._collection.length, "Collection length must not match source length if items are filtered");
-		Assert.equals(this._collection.array.length - 2, this._collection.length, "Collection length must account for filterFunction");
-		Assert.equals(this._b, this._collection.get(0), "Collection with filterFunction must filter items");
-		Assert.equals(this._d, this._collection.get(1), "Collection with filterFunction must filter items");
+		this.assertCollectionMatches([this._b, this._d]);
+		Assert.same([this._a, this._b, this._c, this._d], this._collection.array);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE}
+		]);
 		Assert.raises(function():Void {
 			this._collection.get(2);
 		}, RangeError);
@@ -392,16 +394,15 @@ class ArrayCollectionTest extends Test {
 
 	public function testSetFilterFunctionToNull():Void {
 		this._collection.filterFunction = filterFunction;
-		// get an item so that we know the filtering was applied
-		Assert.equals(this._b, this._collection.get(0), "Collection with filterFunction must filter items");
-
+		this.assertCollectionMatches([this._b, this._d]);
 		this._collection.filterFunction = null;
-		Assert.equals(this._collection.array.length, this._collection.length,
-			"Collection length must match source length after setting filterFunction to null");
-		Assert.equals(this._a, this._collection.get(0), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._b, this._collection.get(1), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._c, this._collection.get(2), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._d, this._collection.get(3), "Collection order is incorrect after setting filterFunction to null");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE},
+			{type: FlatCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testContainsWithFilterFunction():Void {
@@ -421,124 +422,61 @@ class ArrayCollectionTest extends Test {
 	}
 
 	public function testSetReplaceWithFilterFunction():Void {
-		var preFilteredLength = this._collection.length;
-
 		this._collection.filterFunction = filterFunction;
+		this.assertCollectionMatches([this._b, this._d]);
+		this.clearDispatchedEvents();
 
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalFilteredLength = this._collection.length;
 		var expectedIndex = 1;
-		var expectedUnfilteredIndex = 3;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
-			replaceItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		var replacedItem = this._collection.get(expectedIndex);
 		this._collection.set(expectedIndex, itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after replacing in collection");
-		Assert.isFalse(addItemEvent, "FlatCollectionEvent.ADD_ITEM must not be dispatched after replacing in collection");
-		Assert.isTrue(replaceItemEvent, "FlatCollectionEvent.REPLACE_ITEM must be dispatched after replacing in collection");
-		Assert.equals(originalFilteredLength, this._collection.length, "Collection length must not change after replacing in collection");
+		this.assertCollectionMatches([this._b, itemToAdd]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REPLACE_ITEM, index: expectedIndex, addedItem: itemToAdd, removedItem: this._d},
+			{type: Event.CHANGE}
+		]);
 		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Replacing item in collection returns incorrect index");
-		Assert.equals(expectedIndex, indexFromEvent, "Replacing item in collection returns incorrect index in event");
 
 		this._collection.filterFunction = null;
 
-		Assert.equals(preFilteredLength, this._collection.length, "Collection length must change after replacing item");
-		Assert.equals(expectedUnfilteredIndex, this._collection.indexOf(itemToAdd), "Replacing item returns incorrect index of new item");
+		this.assertCollectionMatches([this._a, this._b, this._c, itemToAdd]);
 	}
 
 	public function testSetAfterEndWithFilterFunction():Void {
-		var preFilteredLength = this._collection.length;
-
 		this._collection.filterFunction = filterFunction;
+		this.assertCollectionMatches([this._b, this._d]);
+		this.clearDispatchedEvents();
 
 		var itemToAdd = new MockItem("New Item", 100);
 		var originalFilteredLength = this._collection.length;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
-			replaceItemEvent = true;
-			indexFromEvent = event.index;
-		});
 		this._collection.set(originalFilteredLength, itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after setting item after end of collection");
-		Assert.isTrue(addItemEvent, "FlatCollectionEvent.ADD_ITEM must be dispatched after setting item after end of collection");
-		Assert.isFalse(replaceItemEvent, "FlatCollectionEvent.REPLACE_ITEM must not be dispatched after setting item after end of collection");
-		Assert.equals(originalFilteredLength + 1, this._collection.length, "Collection length must change after setting item after end of collection");
+		this.assertCollectionMatches([this._b, this._d, itemToAdd]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.ADD_ITEM, index: originalFilteredLength, addedItem: itemToAdd},
+			{type: Event.CHANGE}
+		]);
 		Assert.equals(originalFilteredLength, this._collection.indexOf(itemToAdd), "Setting item after end of collection returns incorrect index");
-		Assert.equals(originalFilteredLength, indexFromEvent, "Setting item after end of collection returns incorrect index in event");
 
 		this._collection.filterFunction = null;
-
-		Assert.equals(preFilteredLength + 1, this._collection.length,
-			"Collection length must change after setting item after end of collection (and filter is removed)");
-		Assert.equals(preFilteredLength, this._collection.indexOf(itemToAdd), "Setting item after end of collection returns incorrect index");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd]);
 	}
 
 	public function testSetWithFilterFunctionAndNoMatch():Void {
-		var preFilteredLength = this._collection.length;
-
 		this._collection.filterFunction = filterFunction;
+		this.assertCollectionMatches([this._b, this._d]);
+		this.clearDispatchedEvents();
 
 		var itemToAdd = new MockItem(TEXT_FILTER_ME, 100);
-		var originalFilteredLength = this._collection.length;
 		var expectedIndex = 1;
-		var expectedUnfilteredIndex = 3;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var removeItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
-			replaceItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
-			removeItemEvent = true;
-			indexFromEvent = event.index;
-		});
 		this._collection.set(expectedIndex, itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after setting item that is filtered");
-		Assert.isFalse(addItemEvent, "FlatCollectionEvent.ADD_ITEM must not be dispatched after setting item that is filtered");
-		Assert.isFalse(replaceItemEvent, "FlatCollectionEvent.REPLACE_ITEM must not be dispatched after setting item after end of collection");
-		Assert.isTrue(removeItemEvent, "FlatCollectionEvent.REMOVE_ITEM must be dispatched after setting item that is filtered");
-		Assert.equals(originalFilteredLength - 1, this._collection.length, "Collection length must change after setting item that is filtered");
+		this.assertCollectionMatches([this._b]);
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REMOVE_ITEM, index: expectedIndex, removedItem: this._d},
+			{type: Event.CHANGE}
+		]);
 		Assert.equals(-1, this._collection.indexOf(itemToAdd), "Setting item that is filtered returns incorrect index");
-		Assert.equals(expectedIndex, indexFromEvent, "Setting item that is filtered returns incorrect index in event");
 
 		this._collection.filterFunction = null;
-
-		Assert.equals(preFilteredLength, this._collection.length,
-			"Collection length must not change after setting item that is filtered (and filter is removed)");
-		Assert.equals(expectedUnfilteredIndex, this._collection.indexOf(itemToAdd), "Setting item that is filtered returns incorrect index");
+		this.assertCollectionMatches([this._a, this._b, this._c, itemToAdd]);
 	}
 
 	public function testIndexOfInsideSecondFilterFunction():Void {
@@ -546,13 +484,13 @@ class ArrayCollectionTest extends Test {
 			var index = this._collection.array.indexOf(item);
 			return index % 2 == 0;
 		};
-		this._collection.get(0);
+		this.assertCollectionMatches([this._a, this._c]);
 		this._collection.filterFunction = (item:MockItem) -> {
 			var index = this._collection.array.indexOf(item);
 			Assert.notEquals(-1, index, "Collection with filterFunction must not return -1 for index during filtering");
 			return index % 2 == 0;
 		};
-		this._collection.get(0);
+		this.assertCollectionMatches([this._a, this._c]);
 	}
 
 	public function testChangeSourceWithFilterFunction():Void {
@@ -560,62 +498,35 @@ class ArrayCollectionTest extends Test {
 			var index = this._collection.array.indexOf(item);
 			return index % 2 == 0;
 		};
-		Assert.equals(2, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0));
-		Assert.equals(this._c, this._collection.get(1));
+		this.assertCollectionMatches([this._a, this._c]);
 
 		var new1 = new MockItem("New Item 1", 101);
 		var new2 = new MockItem("New Item 2", 102);
 		this._collection.array = [new1, new2];
-
-		Assert.equals(1, this._collection.length);
-		Assert.equals(new1, this._collection.get(0));
-		Assert.equals(0, this._collection.indexOf(new1));
-		Assert.equals(-1, this._collection.indexOf(new2));
-		Assert.isFalse(this._collection.contains(this._a));
-		Assert.isFalse(this._collection.contains(this._b));
-		Assert.isFalse(this._collection.contains(this._c));
-		Assert.isFalse(this._collection.contains(this._d));
+		this.assertCollectionMatches([new1]);
 	}
 
 	public function testUpdateAtWithFilterFunction():Void {
 		this._collection.filterFunction = (item:MockItem) -> {
 			return item.value > 1 && item.value < 5;
 		};
-		Assert.equals(2, this._collection.length);
-		Assert.equals(this._b, this._collection.get(0));
-		Assert.equals(this._c, this._collection.get(1));
+		this.assertCollectionMatches([this._b, this._c]);
 
 		this._b.value = 100;
 		this._collection.updateAt(0);
-
-		Assert.equals(1, this._collection.length);
-		Assert.equals(this._c, this._collection.get(0));
-		Assert.isFalse(this._collection.contains(this._a));
-		Assert.isFalse(this._collection.contains(this._b));
-		Assert.isTrue(this._collection.contains(this._c));
-		Assert.isFalse(this._collection.contains(this._d));
+		this.assertCollectionMatches([this._c]);
 	}
 
 	public function testUpdateAllWithFilterFunction():Void {
 		this._collection.filterFunction = (item:MockItem) -> {
 			return item.value > 1 && item.value < 5;
 		};
-		Assert.equals(2, this._collection.length);
-		Assert.equals(this._b, this._collection.get(0));
-		Assert.equals(this._c, this._collection.get(1));
+		this.assertCollectionMatches([this._b, this._c]);
 
 		this._a.value = 4;
 		this._b.value = 100;
 		this._collection.updateAll();
-
-		Assert.equals(2, this._collection.length);
-		Assert.equals(this._a, this._collection.get(0));
-		Assert.equals(this._c, this._collection.get(1));
-		Assert.isTrue(this._collection.contains(this._a));
-		Assert.isFalse(this._collection.contains(this._b));
-		Assert.isTrue(this._collection.contains(this._c));
-		Assert.isFalse(this._collection.contains(this._d));
+		this.assertCollectionMatches([this._a, this._c]);
 	}
 
 	//--- sortCompareFunction
