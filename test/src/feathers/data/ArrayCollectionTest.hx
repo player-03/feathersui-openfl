@@ -27,6 +27,17 @@ class ArrayCollectionTest extends Test {
 	private var _c:MockItem;
 	private var _d:MockItem;
 
+	private var _changeEvent:Event = null;
+	private var _addItemEvent:FlatCollectionEvent = null;
+	private var _removeItemEvent:FlatCollectionEvent = null;
+	private var _replaceItemEvent:FlatCollectionEvent = null;
+	private var _updateItemEvent:FlatCollectionEvent = null;
+	private var _updateAllEvent:FlatCollectionEvent = null;
+	private var _resetEvent:FlatCollectionEvent = null;
+	private var _removeAllEvent:FlatCollectionEvent = null;
+	private var _filterChangeEvent:FlatCollectionEvent = null;
+	private var _sortChangeEvent:FlatCollectionEvent = null;
+
 	public function new() {
 		super();
 	}
@@ -37,10 +48,62 @@ class ArrayCollectionTest extends Test {
 		this._c = new MockItem("C", 3);
 		this._d = new MockItem("D", 1);
 		this._collection = new ArrayCollection([this._a, this._b, this._c, this._d]);
+
+		this._changeEvent = null;
+		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
+			this._changeEvent = event;
+		});
+		this._addItemEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
+			this._addItemEvent = event;
+		});
+		this._removeItemEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
+			this._removeItemEvent = event;
+		});
+		this._replaceItemEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
+			this._replaceItemEvent = event;
+		});
+		this._updateItemEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.UPDATE_ITEM, function(event:FlatCollectionEvent):Void {
+			this._updateItemEvent = event;
+		});
+		this._updateAllEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.UPDATE_ALL, function(event:FlatCollectionEvent):Void {
+			this._updateAllEvent = event;
+		});
+		this._resetEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.RESET, function(event:FlatCollectionEvent):Void {
+			this._resetEvent = event;
+		});
+		this._removeAllEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ALL, function(event:FlatCollectionEvent):Void {
+			this._removeAllEvent = event;
+		});
+		this._filterChangeEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.FILTER_CHANGE, function(event:FlatCollectionEvent):Void {
+			this._filterChangeEvent = event;
+		});
+		this._sortChangeEvent = null;
+		this._collection.addEventListener(FlatCollectionEvent.SORT_CHANGE, function(event:FlatCollectionEvent):Void {
+			this._sortChangeEvent = event;
+		});
 	}
 
 	public function teardown():Void {
 		this._collection = null;
+
+		this._changeEvent = null;
+		this._addItemEvent = null;
+		this._removeItemEvent = null;
+		this._replaceItemEvent = null;
+		this._updateItemEvent = null;
+		this._updateAllEvent = null;
+		this._resetEvent = null;
+		this._removeAllEvent = null;
+		this._filterChangeEvent = null;
+		this._sortChangeEvent = null;
 	}
 
 	private function filterFunction(item:MockItem):Bool {
@@ -127,24 +190,13 @@ class ArrayCollectionTest extends Test {
 
 	public function testAdd():Void {
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalLength = this._collection.length;
-		var expectedIndex = originalLength;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
+		var expectedIndex = this._collection.length;
 		this._collection.add(itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after adding to collection");
-		Assert.isTrue(addItemEvent, "FlatCollectionEvent.ADD_ITEM must be dispatched after adding to collection");
+		Assert.notNull(this._changeEvent, "Event.CHANGE must be dispatched after adding to collection");
+		Assert.notNull(this._addItemEvent, "FlatCollectionEvent.ADD_ITEM must be dispatched after adding to collection")
+			&& Assert.equals(expectedIndex, this._addItemEvent.index, "Adding item to collection returns incorrect index in event");
 		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd], "Collection must update after adding to collection");
 		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Adding item to collection returns incorrect index");
-		Assert.equals(expectedIndex, indexFromEvent, "Adding item to collection returns incorrect index in event");
 	}
 
 	public function testAddAt():Void {
