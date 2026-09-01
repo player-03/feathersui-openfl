@@ -134,10 +134,12 @@ class ArrayCollectionTest extends Test {
 	}
 
 	/**
-		Asserts that `this._collection` dispatched the given events in the given
+		Asserts that the collection dispatched the given events in the given
 		order with the given fields, and no other events.
-		@param events The events that should have been dispatched, including any
-		fields they should have.
+		@param expectedEvents The events that should have been dispatched,
+		including any fields they should have.
+		@param actualEvents The events that were actually dispatched. Defaults
+		to events dispatched by `this._collection`.
 		@return True if all tests passed, false if any failed.
 	**/
 	private function assertEventsDispatched(expectedEvents:Array<Dynamic>, ?actualEvents:Array<Event>, ?pos:PosInfos):Bool {
