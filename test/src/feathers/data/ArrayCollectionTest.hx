@@ -259,72 +259,39 @@ class ArrayCollectionTest extends Test {
 	public function testSetAfterEnd():Void {
 		var itemToAdd = new MockItem("New Item", 100);
 		var originalLength = this._collection.length;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
-			replaceItemEvent = true;
-			indexFromEvent = event.index;
-		});
 		this._collection.set(originalLength, itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after setting item after end of collection");
-		Assert.isTrue(addItemEvent, "FlatCollectionEvent.ADD_ITEM must be dispatched after setting item after end of collection");
-		Assert.isFalse(replaceItemEvent, "FlatCollectionEvent.REPLACE_ITEM must not be dispatched after setting item after end of collection");
-		Assert.equals(originalLength + 1, this._collection.length, "Collection length must change after setting item after end of collection");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d, itemToAdd], "Collection must update after replacing in collection");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.ADD_ITEM, index: originalLength, addedItem: itemToAdd},
+			{type: Event.CHANGE}
+		], "After setting item after end of collection");
 		Assert.equals(originalLength, this._collection.indexOf(itemToAdd), "Setting item after end of collection returns incorrect index");
-		Assert.equals(originalLength, indexFromEvent, "Setting item after end of collection returns incorrect index in event");
 	}
 
 	public function testRemove():Void {
-		var originalLength = this._collection.length;
 		var expectedIndex = 1;
-		var itemToRemove = this._collection.get(expectedIndex);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
-			removeItemEvent = true;
-			indexFromEvent = event.index;
-		});
+		var itemToRemove = this._b;
+		Assert.equals(itemToRemove, this._collection.get(expectedIndex));
 		this._collection.remove(itemToRemove);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after removing from collection");
-		Assert.isTrue(removeItemEvent, "FlatCollectionEvent.REMOVE_ITEM must be dispatched after removing from collection");
-		Assert.equals(originalLength - 1, this._collection.length, "Collection length must change after removing from collection");
+		this.assertCollectionMatches([this._a, this._c, this._d], "Collection must update after removing item");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REMOVE_ITEM, index: expectedIndex, removedItem: itemToRemove},
+			{type: Event.CHANGE}
+		], "After removing item from collection");
 		Assert.equals(-1, this._collection.indexOf(itemToRemove), "Removing item from collection returns incorrect index");
-		Assert.equals(expectedIndex, indexFromEvent, "Removing item from collection returns incorrect index in event");
 	}
 
 	public function testRemoveAt():Void {
-		var originalLength = this._collection.length;
 		var expectedIndex = 1;
-		var itemToRemove = this._collection.get(expectedIndex);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ITEM, function(event:FlatCollectionEvent):Void {
-			removeItemEvent = true;
-			indexFromEvent = event.index;
-		});
+		var itemToRemove = this._b;
+		Assert.equals(itemToRemove, this._collection.get(expectedIndex));
 		this._collection.removeAt(expectedIndex);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after removing from collection");
-		Assert.isTrue(removeItemEvent, "FlatCollectionEvent.REMOVE_ITEM must be dispatched after removing from collection");
-		Assert.equals(originalLength - 1, this._collection.length, "Collection length must change after removing from collection");
+		this.assertCollectionMatches([this._a, this._c, this._d], "Collection must update after removing item");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REMOVE_ITEM, index: expectedIndex, removedItem: itemToRemove},
+			{type: Event.CHANGE}
+		], "After removing item from collection");
 		Assert.equals(-1, this._collection.indexOf(itemToRemove), "Removing item from collection returns incorrect index");
-		Assert.equals(expectedIndex, indexFromEvent, "Removing item from collection returns incorrect index in event");
 
 		Assert.raises(function() {
 			this._collection.removeAt(100);
@@ -335,77 +302,49 @@ class ArrayCollectionTest extends Test {
 	}
 
 	public function testRemoveAll():Void {
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeAllEvent = false;
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ALL, function(event:FlatCollectionEvent):Void {
-			removeAllEvent = true;
-		});
-		var resetEvent = false;
-		this._collection.addEventListener(FlatCollectionEvent.RESET, function(event:FlatCollectionEvent):Void {
-			resetEvent = true;
-		});
 		this._collection.removeAll();
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after removing all from collection");
-		Assert.isTrue(removeAllEvent, "FlatCollectionEvent.REMOVE_ALL must be dispatched after removing all from collection");
-		Assert.isFalse(resetEvent, "FlatCollectionEvent.RESET must not be dispatched after removing all from collection");
-		Assert.equals(0, this._collection.length, "Collection length must change after removing all from collection");
+		this.assertCollectionMatches([], "Collection must be empty after removing all");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.REMOVE_ALL},
+			{type: Event.CHANGE}
+		], "After removing all from collection");
 	}
 
 	public function testRemoveAllWithEmptyCollection():Void {
 		this._collection = new ArrayCollection();
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeAllEvent = false;
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ALL, function(event:FlatCollectionEvent):Void {
-			removeAllEvent = true;
-		});
+		this.addCollectionEventListeners(this._collection, this._events);
 		this._collection.removeAll();
-		Assert.isFalse(changeEvent, "Event.CHANGE must not be dispatched after removing all from empty collection");
-		Assert.isFalse(removeAllEvent, "FlatCollectionEvent.REMOVE_ALL must not be dispatched after removing all from empty collection");
+		this.assertCollectionMatches([], "Collection must be empty after removing all");
+		this.assertEventsDispatched([], "After removing all from empty collection");
 	}
 
 	public function testResetArray():Void {
 		var newArray = [this._c, this._b, this._a];
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeAllEvent = false;
-		this._collection.addEventListener(FlatCollectionEvent.REMOVE_ALL, function(event:FlatCollectionEvent):Void {
-			removeAllEvent = true;
-		});
-		var resetEvent = false;
-		this._collection.addEventListener(FlatCollectionEvent.RESET, function(event:FlatCollectionEvent):Void {
-			resetEvent = true;
-		});
 		this._collection.array = newArray;
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after resetting collection");
-		Assert.isTrue(resetEvent, "FlatCollectionEvent.RESET must be dispatched after resetting collection");
-		Assert.isFalse(removeAllEvent, "FlatCollectionEvent.REMOVE_ALL must not be dispatched after resetting from collection");
-		Assert.equals(newArray.length, this._collection.length, "Collection length must change after resetting collection with data of new size");
+		this.assertCollectionMatches([this._c, this._b, this._a], "Collection must contain given data after setting collection source");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.RESET},
+			{type: Event.CHANGE}
+		], "After setting collection source");
 	}
 
 	public function testResetArrayToNull():Void {
 		this._collection.array = null;
-		Assert.isOfType(this._collection.array, Array, "Setting collection source to null should replace with an empty value.");
-		Assert.equals(0, this._collection.length, "Collection length must change after resetting collection source with empty valee");
+		this.assertCollectionMatches([], "Setting collection source to null should replace with an empty array");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.RESET},
+			{type: Event.CHANGE}
+		], "After setting collection source to null");
 	}
 
 	public function testUpdateAt():Void {
-		var updateItemEvent = false;
-		var updateItemIndex = -1;
-		this._collection.addEventListener(FlatCollectionEvent.UPDATE_ITEM, function(event:FlatCollectionEvent):Void {
-			updateItemEvent = true;
-			updateItemIndex = event.index;
-		});
-		this._collection.updateAt(1);
-		Assert.isTrue(updateItemEvent, "FlatCollectionEvent.UPDATE_ITEM must be dispatched after calling updateAt()");
-		Assert.equals(1, updateItemIndex, "FlatCollectionEvent.UPDATE_ITEM must be dispatched with correct index");
+		var expectedIndex = 1;
+		this._collection.updateAt(expectedIndex);
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d], "Calling updateAt() should not change collection contents");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.UPDATE_ITEM, index: expectedIndex},
+			{type: Event.CHANGE}
+		], "After calling updateAt()");
 
 		Assert.raises(function():Void {
 			this._collection.updateAt(100);
@@ -416,12 +355,12 @@ class ArrayCollectionTest extends Test {
 	}
 
 	public function testUpdateAll():Void {
-		var updateAllEvent = false;
-		this._collection.addEventListener(FlatCollectionEvent.UPDATE_ALL, function(event:FlatCollectionEvent):Void {
-			updateAllEvent = true;
-		});
 		this._collection.updateAll();
-		Assert.isTrue(updateAllEvent, "FlatCollectionEvent.UPDATE_ALL must be dispatched after calling updateAll()");
+		this.assertCollectionMatches([this._a, this._b, this._c, this._d], "Calling updateAll() should not change collection contents");
+		this.assertEventsDispatched([
+			{type: FlatCollectionEvent.UPDATE_ALL},
+			{type: Event.CHANGE}
+		], "After calling updateAll()");
 	}
 
 	//--- filterFunction
