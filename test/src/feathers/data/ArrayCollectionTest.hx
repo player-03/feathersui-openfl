@@ -251,6 +251,7 @@ class ArrayCollectionTest extends Test {
 			Event.CHANGE => {},
 			FlatCollectionEvent.ADD_ITEM => {index: expectedIndex, addedItem: itemToAdd}
 		], "adding item to collection");
+		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Adding item to collection returns incorrect index");
 	}
 
 	public function testAddAt():Void {
