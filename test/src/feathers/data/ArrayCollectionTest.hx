@@ -69,7 +69,13 @@ class ArrayCollectionTest extends Test {
 		return 0;
 	}
 
-	private function addCollectionEventListeners(collection:ArrayCollection<MockItem>, events:Array<Event>):Void {
+	private function addCollectionEventListeners(?collection:ArrayCollection<MockItem>, ?events:Array<Event>):Void {
+		if (collection == null) {
+			collection = this._collection;
+		}
+		if (events == null) {
+			events = this._events;
+		}
 		function recordEvent(event:Event):Void {
 			events.push(event.clone());
 		}
@@ -83,6 +89,17 @@ class ArrayCollectionTest extends Test {
 		collection.addEventListener(FlatCollectionEvent.REMOVE_ALL, recordEvent);
 		collection.addEventListener(FlatCollectionEvent.FILTER_CHANGE, recordEvent);
 		collection.addEventListener(FlatCollectionEvent.SORT_CHANGE, recordEvent);
+	}
+
+	private function clearDispatchedEvents(?events:Array<Event>):Void {
+		if (events == null) {
+			events = this._events;
+		}
+		#if (hl && haxe_ver < 4.3)
+		events.splice(0, events.length);
+		#else
+		events.resize(0);
+		#end
 	}
 
 	/**
@@ -308,7 +325,7 @@ class ArrayCollectionTest extends Test {
 
 	public function testRemoveAllWithEmptyCollection():Void {
 		this._collection = new ArrayCollection();
-		this.addCollectionEventListeners(this._collection, this._events);
+		this.addCollectionEventListeners();
 		this._collection.removeAll();
 		this.assertCollectionMatches([]);
 		this.assertEventsDispatched([]);
