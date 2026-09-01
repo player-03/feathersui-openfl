@@ -256,24 +256,14 @@ class ArrayCollectionTest extends Test {
 
 	public function testAddAt():Void {
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalLength = this._collection.length;
 		var expectedIndex = 1;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
 		this._collection.addAt(itemToAdd, expectedIndex);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after adding to collection");
-		Assert.isTrue(addItemEvent, "FlatCollectionEvent.ADD_ITEM must be dispatched after adding to collection");
-		Assert.equals(originalLength + 1, this._collection.length, "Collection length must change after adding to collection");
+		this.assertCollectionMatches([this._a, itemToAdd, this._b, this._c, this._d], "Collection must update after adding to collection");
+		this.assertEventsDispatched([
+			Event.CHANGE => {},
+			FlatCollectionEvent.ADD_ITEM => {index: expectedIndex, addedItem: itemToAdd}
+		], "adding item to collection");
 		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Adding item to collection returns incorrect index");
-		Assert.equals(expectedIndex, indexFromEvent, "Adding item to collection returns incorrect index in event");
 
 		Assert.raises(function() {
 			this._collection.addAt(itemToAdd, 100);
@@ -285,30 +275,14 @@ class ArrayCollectionTest extends Test {
 
 	public function testSetReplace():Void {
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalLength = this._collection.length;
 		var expectedIndex = 1;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var indexFromEvent = -1;
-		this._collection.addEventListener(FlatCollectionEvent.ADD_ITEM, function(event:FlatCollectionEvent):Void {
-			addItemEvent = true;
-			indexFromEvent = event.index;
-		});
-		this._collection.addEventListener(FlatCollectionEvent.REPLACE_ITEM, function(event:FlatCollectionEvent):Void {
-			replaceItemEvent = true;
-			indexFromEvent = event.index;
-		});
 		this._collection.set(expectedIndex, itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after replacing in collection");
-		Assert.isFalse(addItemEvent, "FlatCollectionEvent.ADD_ITEM must not be dispatched after replacing in collection");
-		Assert.isTrue(replaceItemEvent, "FlatCollectionEvent.REPLACE_ITEM must be dispatched after replacing in collection");
-		Assert.equals(originalLength, this._collection.length, "Collection length must not change after replacing in collection");
+		this.assertCollectionMatches([this._a, itemToAdd, this._c, this._d], "Collection must update after replacing in collection");
+		this.assertEventsDispatched([
+			Event.CHANGE => {},
+			FlatCollectionEvent.REPLACE_ITEM => {index: expectedIndex, addedItem: itemToAdd, removedItem: this._b}
+		], "replacing item in collection");
 		Assert.equals(expectedIndex, this._collection.indexOf(itemToAdd), "Replacing item in collection returns incorrect index");
-		Assert.equals(expectedIndex, indexFromEvent, "Replacing item in collection returns incorrect index in event");
 
 		Assert.raises(function() {
 			this._collection.set(100, itemToAdd);
