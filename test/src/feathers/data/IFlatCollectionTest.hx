@@ -153,14 +153,14 @@ class IFlatCollectionTest extends Test {
 		for (i in 0...expectedEvents.length) {
 			var expected = expectedEvents[i];
 			if (i >= actualEvents.length) {
-				Assert.fail('Collection must dispatch ${expected.type} event at index $i', pos);
+				Assert.fail('Collection must dispatch ${expected.type} as event #$i', pos);
 				allTestsPassed = false;
 				continue;
 			}
 
 			var actual = actualEvents[i];
 			if (expected.type != actual.type) {
-				Assert.fail('Collection must dispatch ${expected.type} event at index $i, got ${actual.type}', pos);
+				Assert.fail('Collection must dispatch ${expected.type} as event #$i, got ${actual.type}', pos);
 				allTestsPassed = false;
 				continue;
 			}
