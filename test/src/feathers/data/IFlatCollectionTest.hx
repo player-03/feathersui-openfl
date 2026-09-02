@@ -128,8 +128,6 @@ class IFlatCollectionTest extends Test {
 				Assert.pass();
 			} else {
 				result = false;
-				var expectedString:String = expected != null ? expected.text : "null";
-				var actualString:String = actual != null ? actual.text : "null";
 				Assert.fail('Expected $expected at index $i, got $actual', pos);
 			}
 		}
