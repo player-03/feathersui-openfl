@@ -142,7 +142,7 @@ class HierarchicalCollectionEvent extends Event {
 	public static function dispatch(dispatcher:IEventDispatcher, type:String, location:Array<Int>, addedItem:Dynamic = null, removedItem:Dynamic = null,
 			bubbles:Bool = false, cancelable:Bool = false):Bool {
 		#if flash
-		var event = new HierarchicalCollectionEvent(type, location, bubbles, cancelable);
+		var event = new HierarchicalCollectionEvent(type, location, addedItem, removedItem, bubbles, cancelable);
 		return dispatcher.dispatchEvent(event);
 		#else
 		var event = _pool.get();
