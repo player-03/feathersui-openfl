@@ -10,6 +10,7 @@ package feathers.data;
 
 import feathers.events.HierarchicalCollectionEvent;
 import haxe.io.Error;
+import haxe.PosInfos;
 import openfl.Lib;
 import openfl.errors.RangeError;
 import openfl.events.Event;
@@ -32,6 +33,8 @@ import utest.Test;
 	private var _4a:MockItem;
 	private var _4b:MockItem;
 
+	private var _events:Array<Event> = null;
+
 	public function new() {
 		super();
 	}
@@ -49,10 +52,145 @@ import utest.Test;
 		this._4 = new MockItem("4", 1, [this._4a, this._4b]);
 		this._5 = new MockItem("5", 4, []);
 		this._collection = new ArrayHierarchicalCollection([this._1, this._2, this._3, this._4, this._5], (item:MockItem) -> item.children);
+
+		this._events = [];
+		this.addCollectionEventListeners(this._collection, this._events);
 	}
 
 	public function teardown():Void {
 		this._collection = null;
+
+		this._events = null;
+	}
+
+	private function addCollectionEventListeners(?collection:IHierarchicalCollection<MockItem>, ?events:Array<Event>):Void {
+		if (collection == null) {
+			collection = this._collection;
+		}
+		if (events == null) {
+			events = this._events;
+		}
+		function recordEvent(event:Event):Void {
+			events.push(event.clone());
+		}
+		collection.addEventListener(Event.CHANGE, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.UPDATE_ITEM, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.UPDATE_ALL, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.RESET, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ALL, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.FILTER_CHANGE, recordEvent);
+		collection.addEventListener(HierarchicalCollectionEvent.SORT_CHANGE, recordEvent);
+	}
+
+	private function clearDispatchedEvents(?events:Array<Event>):Void {
+		if (events == null) {
+			events = this._events;
+		}
+		#if (hl && haxe_ver < 4.3)
+		events.splice(0, events.length);
+		#else
+		events.resize(0);
+		#end
+	}
+
+	/**
+		Asserts that the given branch of `collection` has the same items as
+		`items`, in the same order, and that both have the same length.
+		@return True if all tests passed, false if any failed.
+	**/
+	private function assertBranchMatches(items:Array<MockItem>, ?collection:IHierarchicalCollection<MockItem>, ?location:Array<Int>, ?pos:PosInfos):Bool {
+		if (collection == null) {
+			collection = this._collection;
+		}
+		if (location == null) {
+			location = [];
+		} else if (location.length > 0 && !collection.isBranch(collection.get(location))) {
+			Assert.fail('Collection should have a branch at location $location', pos);
+			return false;
+		}
+		if (items.length == collection.getLength(location)) {
+			Assert.pass();
+		} else {
+			Assert.fail('Branch should have length ${items.length}, got ${collection.getLength(location)}', pos);
+			return false;
+		}
+		var result:Bool = true;
+		for (i in 0...items.length) {
+			location.push(i);
+			var expected:MockItem = items[i];
+			var actual:MockItem = collection.get(location);
+			if (expected == actual) {
+				Assert.pass();
+			} else {
+				result = false;
+				Assert.fail('Expected $expected at $location, got $actual', pos);
+			}
+			location.pop();
+		}
+		return result;
+	}
+
+	/**
+		Asserts that the collection dispatched the given events in the given
+		order with the given fields, and no other events. Fields named
+		"location" will be compared using `Assert.same()`, so they'll match as
+		long as they contain the same values.
+		@param expectedEvents The events that should have been dispatched,
+		including any fields they should have.
+		@param actualEvents The events that were actually dispatched. Defaults
+		to events dispatched by `this._collection`.
+		@return True if all tests passed, false if any failed.
+	**/
+	private function assertEventsDispatched(expectedEvents:Array<Dynamic>, ?actualEvents:Array<Event>, ?pos:PosInfos):Bool {
+		if (actualEvents == null) {
+			actualEvents = this._events;
+		}
+
+		var allTestsPassed:Bool = true;
+
+		for (i in 0...expectedEvents.length) {
+			var expected = expectedEvents[i];
+			if (i >= actualEvents.length) {
+				Assert.fail('Collection must dispatch ${expected.type} event at index $i', pos);
+				allTestsPassed = false;
+				continue;
+			}
+
+			var actual = actualEvents[i];
+			if (expected.type != actual.type) {
+				Assert.fail('Collection must dispatch ${expected.type} event at index $i, got ${actual.type}', pos);
+				allTestsPassed = false;
+				continue;
+			}
+
+			for (field in Reflect.fields(expected)) {
+				if (field == "type") {
+					continue;
+				}
+				var expectedField:Dynamic = Reflect.field(expected, field);
+				var actualField:Dynamic = Reflect.field(actual, field);
+				if (field == "location") {
+					allTestsPassed = Assert.same(expectedField, actualField,
+						'${actual.type} event (#$i) must have location $expectedField, got $actualField', pos)
+						&& allTestsPassed;
+				} else {
+					allTestsPassed = Assert.equals(expectedField, actualField,
+						'${actual.type} event (#$i) must have $field == $expectedField, got $field == $actualField', pos)
+						&& allTestsPassed;
+				}
+			}
+		}
+
+		for (i in expectedEvents.length...actualEvents.length) {
+			var actual = actualEvents[i];
+			Assert.fail('Collection must not dispatch ${actual.type} event (#$i)', pos);
+			allTestsPassed = false;
+		}
+
+		return allTestsPassed;
 	}
 
 	private function locationsMatch(location1:Array<Int>, location2:Array<Int>):Bool {
@@ -156,23 +294,13 @@ import utest.Test;
 
 	public function testAddAt():Void {
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalLength = this._collection.getLength([0]);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			locationFromEvent = event.location;
-		});
 		this._collection.addAt(itemToAdd, [0, 1]);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after adding to collection");
-		Assert.isTrue(addItemEvent, "HierarchicalCollectionEvent.ADD_ITEM must be dispatched after adding to collection");
-		Assert.equals(originalLength + 1, this._collection.getLength([0]), "Collection length must change after adding to collection");
+		this.assertBranchMatches([this._1a, itemToAdd, this._1b, this._1c], [0]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [0, 1], addedItem: itemToAdd},
+			{type: Event.CHANGE}
+		]);
 		Assert.isTrue(locationsMatch([0, 1], this._collection.locationOf(itemToAdd)), "Adding item to collection returns incorrect location");
-		Assert.isTrue(locationsMatch([0, 1], locationFromEvent), "Adding item to collection returns incorrect location in event");
 
 		Assert.raises(function() {
 			this._collection.addAt(itemToAdd, null);
@@ -1341,4 +1469,8 @@ private class MockItem {
 	public var text:String;
 	public var children:Array<MockItem>;
 	public var value:Float;
+
+	public function toString():String {
+		return 'MockItem("${this.text}", ${this.value})';
+	}
 }
