@@ -28,6 +28,7 @@ import utest.Test;
 	private var _5:MockItem;
 	private var _1a:MockItem;
 	private var _1b:MockItem;
+	private var _1bi:MockItem;
 	private var _1c:MockItem;
 	private var _2a:MockItem;
 	private var _4a:MockItem;
@@ -41,7 +42,8 @@ import utest.Test;
 
 	public function setup():Void {
 		this._1a = new MockItem("1-A", 2);
-		this._1b = new MockItem("1-B", 1, [new MockItem("1-B-I", 1)]);
+		this._1bi = new MockItem("1-B-I", 1);
+		this._1b = new MockItem("1-B", 1, [this._1bi]);
 		this._1c = new MockItem("1-C", 3);
 		this._1 = new MockItem("1", 0, [this._1a, this._1b, this._1c]);
 		this._2a = new MockItem("2-A", 2);
@@ -316,43 +318,24 @@ import utest.Test;
 	public function testAddAtEndOfBranch():Void {
 		var itemToAdd = new MockItem("New Item", 100);
 		var originalLength = this._collection.getLength([0]);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			locationFromEvent = event.location;
-		});
 		this._collection.addAt(itemToAdd, [0, originalLength]);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after adding to collection");
-		Assert.isTrue(addItemEvent, "HierarchicalCollectionEvent.ADD_ITEM must be dispatched after adding to collection");
-		Assert.equals(originalLength + 1, this._collection.getLength([0]), "Collection length must change after adding to collection");
+		this.assertBranchMatches([this._1a, this._1b, this._1c, itemToAdd], [0]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [0, originalLength], addedItem: itemToAdd},
+			{type: Event.CHANGE}
+		]);
 		Assert.isTrue(locationsMatch([0, originalLength], this._collection.locationOf(itemToAdd)), "Adding item to collection returns incorrect location");
-		Assert.isTrue(locationsMatch([0, originalLength], locationFromEvent), "Adding item to collection returns incorrect location in event");
 	}
 
 	public function testSetReplace():Void {
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalLength = this._collection.getLength([0]);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var replaceItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			locationFromEvent = event.location;
-		});
 		this._collection.set([0, 1], itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after replacing in collection");
-		Assert.isTrue(replaceItemEvent, "HierarchicalCollectionEvent.REPLACE_ITEM must be dispatched after replacing in collection");
-		Assert.equals(originalLength, this._collection.getLength([0]), "Collection length must not change after replacing in collection");
+		this.assertBranchMatches([this._1a, itemToAdd, this._1c], [0]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REPLACE_ITEM, location: [0, 1], addedItem: itemToAdd, removedItem: this._1b},
+			{type: Event.CHANGE}
+		]);
 		Assert.isTrue(locationsMatch([0, 1], this._collection.locationOf(itemToAdd)), "Replacing item in collection returns incorrect location");
-		Assert.isTrue(locationsMatch([0, 1], locationFromEvent), "Replacing item in collection returns incorrect location in event");
 
 		Assert.raises(function() {
 			this._collection.set(null, itemToAdd);
@@ -368,65 +351,35 @@ import utest.Test;
 	public function testSetAfterEndOfBranch():Void {
 		var itemToAdd = new MockItem("New Item", 100);
 		var originalLength = this._collection.getLength([0]);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var replaceItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			locationFromEvent = event.location;
-		});
 		this._collection.set([0, originalLength], itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after setting item after end of collection");
-		Assert.isTrue(replaceItemEvent, "HierarchicalCollectionEvent.REPLACE_ITEM must be dispatched after setting item after end of collection");
-		Assert.equals(originalLength + 1, this._collection.getLength([0]), "Collection length must change after setting item after end in collection");
+		this.assertBranchMatches([this._1a, this._1b, this._1c, itemToAdd], [0]);
+		this.assertEventsDispatched([
+			// hierarchical collections dispatch REPLACE_ITEM here, bug?
+			{type: HierarchicalCollectionEvent.REPLACE_ITEM, location: [0, originalLength], addedItem: itemToAdd},
+			{type: Event.CHANGE}
+		]);
 		Assert.isTrue(locationsMatch([0, originalLength], this._collection.locationOf(itemToAdd)),
 			"Setting item after end of collection returns incorrect location");
-		Assert.isTrue(locationsMatch([0, originalLength], locationFromEvent), "Setting item after end of collection returns incorrect location in event");
 	}
 
 	public function testRemove():Void {
-		var originalLength = this._collection.getLength([0]);
-		var itemToRemove = this._collection.get([0, 1]);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.remove(itemToRemove);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after removing from collection");
-		Assert.isTrue(removeItemEvent, "HierarchicalCollectionEvent.REMOVE_ITEM must be dispatched after removing from collection");
-		Assert.equals(originalLength - 1, this._collection.getLength([0]), "Collection length must change after removing from collection");
-		Assert.isNull(this._collection.locationOf(itemToRemove), "Removing item from collection returns incorrect location");
-		Assert.isTrue(locationsMatch([0, 1], locationFromEvent), "Removing item from collection returns incorrect location in event");
+		this._collection.remove(this._1b);
+		this.assertBranchMatches([this._1a, this._1c], [0]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [0, 1], removedItem: this._1b},
+			{type: Event.CHANGE}
+		]);
+		Assert.isNull(this._collection.locationOf(this._1b), "Removing item from collection returns incorrect location");
 	}
 
 	public function testRemoveAt():Void {
-		var originalLength = this._collection.getLength([0]);
-		var itemToRemove = this._collection.get([0, 1]);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			locationFromEvent = event.location;
-		});
 		this._collection.removeAt([0, 1]);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after removing from collection");
-		Assert.isTrue(removeItemEvent, "HierarchicalCollectionEvent.REMOVE_ITEM must be dispatched after removing from collection");
-		Assert.equals(originalLength - 1, this._collection.getLength([0]), "Collection length must change after removing from collection");
-		Assert.isNull(this._collection.locationOf(itemToRemove), "Removing item from collection returns incorrect location");
-		Assert.isTrue(locationsMatch([0, 1], locationFromEvent), "Removing item from collection returns incorrect location in event");
+		this.assertBranchMatches([this._1a, this._1c], [0]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [0, 1], removedItem: this._1b},
+			{type: Event.CHANGE}
+		]);
+		Assert.isNull(this._collection.locationOf(this._1b), "Removing item from collection returns incorrect location");
 
 		Assert.raises(function() {
 			this._collection.removeAt(null);
@@ -440,107 +393,59 @@ import utest.Test;
 	}
 
 	public function testRemoveAll():Void {
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeAllEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ALL, function(event:HierarchicalCollectionEvent):Void {
-			removeAllEvent = true;
-			locationFromEvent = event.location;
-		});
-		var resetEvent = false;
-		this._collection.addEventListener(HierarchicalCollectionEvent.RESET, function(event:HierarchicalCollectionEvent):Void {
-			resetEvent = true;
-		});
 		this._collection.removeAll();
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after removing all from collection");
-		Assert.isTrue(removeAllEvent, "HierarchicalCollectionEvent.REMOVE_ALL must be dispatched after removing all from collection");
-		Assert.isNull(locationFromEvent, "HierarchicalCollectionEvent.REMOVE_ALL location be be null if no location passed as argument");
-		Assert.isFalse(resetEvent, "HierarchicalCollectionEvent.RESET must not be dispatched after removing all from collection");
-		Assert.equals(0, this._collection.getLength(), "Collection length must change after removing all from collection");
+		this.assertBranchMatches([]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ALL, location: null},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testRemoveAllWithEmptyCollection():Void {
 		this._collection = new ArrayHierarchicalCollection();
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeAllEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ALL, function(event:HierarchicalCollectionEvent):Void {
-			removeAllEvent = true;
-			locationFromEvent = event.location;
-		});
 		this._collection.removeAll();
-		Assert.isFalse(changeEvent, "Event.CHANGE must not be dispatched after removing all from empty collection");
-		Assert.isFalse(removeAllEvent, "HierarchicalCollectionEvent.REMOVE_ALL must not be dispatched after removing all from empty collection");
-		Assert.isNull(locationFromEvent, "HierarchicalCollectionEvent.REMOVE_ALL location be be null if no location passed as argument");
+		this.assertBranchMatches([]);
+		this.assertEventsDispatched([]);
 	}
 
 	public function testRemoveAllWithLocation():Void {
-		var originalLength1 = this._collection.getLength();
-		var originalLength2 = this._collection.getLength([1]);
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeAllEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ALL, function(event:HierarchicalCollectionEvent):Void {
-			removeAllEvent = true;
-			locationFromEvent = event.location;
-		});
 		this._collection.removeAll([1]);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after removing all from collection");
-		Assert.isTrue(removeAllEvent, "HierarchicalCollectionEvent.REMOVE_ALL must be dispatched after removing all from collection");
-		Assert.isTrue(locationsMatch([1], locationFromEvent), "Removing item from collection returns incorrect location in event");
-		Assert.equals(originalLength1, this._collection.getLength(), "Collection length must change after removing all from collection");
-		Assert.equals(0, this._collection.getLength([1]), "Collection branch length must change after removing all from branch");
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, this._5]);
+		this.assertBranchMatches([this._1a, this._1b, this._1c], [0]);
+		this.assertBranchMatches([], [1]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ALL, location: [1]},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testResetArray():Void {
 		var newArray = [this._5, this._4, this._3];
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var removeAllEvent = false;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ALL, function(event:HierarchicalCollectionEvent):Void {
-			removeAllEvent = true;
-		});
-		var resetEvent = false;
-		this._collection.addEventListener(HierarchicalCollectionEvent.RESET, function(event:HierarchicalCollectionEvent):Void {
-			resetEvent = true;
-		});
 		this._collection.array = newArray;
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after resetting collection");
-		Assert.isTrue(resetEvent, "HierarchicalCollectionEvent.RESET must be dispatched after resetting collection");
-		Assert.isFalse(removeAllEvent, "HierarchicalCollectionEvent.REMOVE_ALL must not be dispatched after resetting from collection");
-		Assert.equals(newArray.length, this._collection.getLength(), "Collection length must change after resetting collection with data of new size");
+		this.assertBranchMatches([this._5, this._4, this._3]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.RESET, location: null},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testResetArrayToNull():Void {
 		this._collection.array = null;
 		Assert.isOfType(this._collection.array, Array, "Setting collection source to null should replace with an empty value.");
-		Assert.equals(0, this._collection.getLength(), "Collection length must change after resetting collection source with empty valee");
+		this.assertBranchMatches([]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.RESET, location: null},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testUpdateAt():Void {
-		var updateItemEvent = false;
-		var updateItemLocation:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.UPDATE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			updateItemEvent = true;
-			updateItemLocation = event.location;
-		});
 		this._collection.updateAt([0, 1, 0]);
-		Assert.isTrue(updateItemEvent, "HierarchicalCollectionEvent.UPDATE_ITEM must be dispatched after calling updateAt()");
-		Assert.equals(3, updateItemLocation.length, "HierarchicalCollectionEvent.UPDATE_ITEM must be dispatched with correct location");
-		Assert.equals(0, updateItemLocation[0], "HierarchicalCollectionEvent.UPDATE_ITEM must be dispatched with correct location");
-		Assert.equals(1, updateItemLocation[1], "HierarchicalCollectionEvent.UPDATE_ITEM must be dispatched with correct location");
-		Assert.equals(0, updateItemLocation[2], "HierarchicalCollectionEvent.UPDATE_ITEM must be dispatched with correct location");
+		this.assertBranchMatches([this._1bi], [0, 1]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.UPDATE_ITEM, location: [0, 1, 0]},
+			{type: Event.CHANGE}
+		]);
 
 		Assert.raises(function():Void {
 			this._collection.updateAt(null);
@@ -554,32 +459,29 @@ import utest.Test;
 	}
 
 	public function testUpdateAll():Void {
-		var updateAllEvent = false;
-		this._collection.addEventListener(HierarchicalCollectionEvent.UPDATE_ALL, function(event:HierarchicalCollectionEvent):Void {
-			updateAllEvent = true;
-		});
 		this._collection.updateAll();
-		Assert.isTrue(updateAllEvent, "HierarchicalCollectionEvent.UPDATE_ALL must be dispatched after calling updateAll()");
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.UPDATE_ALL, location: null},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	//--- filterFunction
 
 	public function testFilterFunction():Void {
-		Assert.equals(this._collection.array.length, this._collection.getLength(), "Collection length must match source length if unfiltered");
-		Assert.equals(this._collection.array[3].children.length, this._collection.getLength([3]), "Collection length must match source length if unfiltered");
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, this._5]);
+		this.assertBranchMatches([this._1a, this._1b, this._1c], [0]);
+		this.assertBranchMatches([this._4a, this._4b], [3]);
+
 		this._collection.filterFunction = filterFunction;
-		Assert.notEquals(this._collection.array.length, this._collection.getLength(), "Collection length must not match source length if items are filtered");
-		Assert.equals(this._collection.array.length - 1, this._collection.getLength(), "Collection length must account for filterFunction");
-		Assert.equals(this._1, this._collection.get([0]), "Collection with filterFunction must filter items");
-		Assert.equals(this._1a, this._collection.get([0, 0]), "Collection with filterFunction must filter items");
-		Assert.equals(this._1c, this._collection.get([0, 1]), "Collection with filterFunction must filter items");
-		Assert.equals(this._3, this._collection.get([1]), "Collection with filterFunction must filter items");
-		Assert.equals(this._4, this._collection.get([2]), "Collection with filterFunction must filter items");
-		Assert.equals(this._4a, this._collection.get([2, 0]), "Collection with filterFunction must filter items");
-		Assert.equals(this._4b, this._collection.get([2, 1]), "Collection with filterFunction must filter items");
-		Assert.equals(this._5, this._collection.get([3]), "Collection with filterFunction must filter items");
-		Assert.notEquals(this._collection.array[3].children.length, this._collection.getLength([3]),
-			"Collection length must not match source length if items are filtered");
+		this.assertBranchMatches([this._1, this._3, this._4, this._5]);
+		this.assertBranchMatches([this._1a, this._1c], [0]);
+		this.assertBranchMatches([this._4a, this._4b], [2]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE}
+		]);
+
 		Assert.raises(function():Void {
 			this._collection.get([4]);
 		}, RangeError);
@@ -593,23 +495,22 @@ import utest.Test;
 
 	public function testSetFilterFunctionToNull():Void {
 		this._collection.filterFunction = filterFunction;
-		// get an item so that we know the filtering was applied
-		Assert.equals(this._5, this._collection.get([3]), "Collection with filterFunction must filter items");
+		this.assertBranchMatches([this._1, this._3, this._4, this._5]);
+		this.assertBranchMatches([this._1a, this._1c], [0]);
+		this.assertBranchMatches([this._4a, this._4b], [2]);
 
 		this._collection.filterFunction = null;
-		Assert.equals(this._collection.array.length, this._collection.getLength(),
-			"Collection length must match source length after setting filterFunction to null");
-		Assert.equals(this._1, this._collection.get([0]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._1a, this._collection.get([0, 0]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._1b, this._collection.get([0, 1]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._1c, this._collection.get([0, 2]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._2, this._collection.get([1]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._2a, this._collection.get([1, 0]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._3, this._collection.get([2]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._4, this._collection.get([3]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._4a, this._collection.get([3, 0]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._4b, this._collection.get([3, 1]), "Collection order is incorrect after setting filterFunction to null");
-		Assert.equals(this._5, this._collection.get([4]), "Collection order is incorrect after setting filterFunction to null");
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, this._5]);
+		this.assertBranchMatches([this._1a, this._1b, this._1c], [0]);
+		this.assertBranchMatches([this._2a], [1]);
+		this.assertBranchMatches([this._4a, this._4b], [3]);
+
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE},
+			{type: HierarchicalCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testContainsWithFilterFunction():Void {
@@ -643,127 +544,63 @@ import utest.Test;
 	}
 
 	public function testSetReplaceWithFilterFunction():Void {
-		var preFilteredLength = this._collection.getLength();
-
 		this._collection.filterFunction = filterFunction;
+		this.assertBranchMatches([this._1, this._3, this._4, this._5]);
+		this.clearDispatchedEvents();
 
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalFilteredLength = this._collection.getLength();
-		var expectedIndex = 3;
-		var expectedUnfilteredIndex = 4;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		var replacedItem = this._collection.get([expectedIndex]);
-		this._collection.set([expectedIndex], itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after replacing in collection");
-		Assert.isFalse(addItemEvent, "HierarchicalCollectionEvent.ADD_ITEM must not be dispatched after replacing in collection");
-		Assert.isTrue(replaceItemEvent, "HierarchicalCollectionEvent.REPLACE_ITEM must be dispatched after replacing in collection");
-		Assert.equals(originalFilteredLength, this._collection.getLength(), "Collection length must not change after replacing in collection");
-		Assert.isTrue(locationsMatch([expectedIndex], this._collection.locationOf(itemToAdd)), "Replacing item in collection returns incorrect location");
-		Assert.isTrue(locationsMatch([expectedIndex], locationFromEvent), "Replacing item in collection returns incorrect location in event");
+		this._collection.set([3], itemToAdd);
+		this.assertBranchMatches([this._1, this._3, this._4, itemToAdd]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REPLACE_ITEM, location: [3], addedItem: itemToAdd, removedItem: this._5},
+			{type: Event.CHANGE}
+		]);
+		Assert.isTrue(locationsMatch([3], this._collection.locationOf(itemToAdd)), "Replacing item in collection returns incorrect location");
 
 		this._collection.filterFunction = null;
-
-		Assert.equals(preFilteredLength, this._collection.getLength(), "Collection length must change after replacing item");
-		Assert.isTrue(locationsMatch([expectedUnfilteredIndex], this._collection.locationOf(itemToAdd)),
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, itemToAdd]);
+		Assert.isTrue(locationsMatch([4], this._collection.locationOf(itemToAdd)),
 			"Replacing item returns incorrect location of new item");
 	}
 
 	public function testSetAfterEndWithFilterFunction():Void {
-		var preFilteredLength = this._collection.getLength();
-
 		this._collection.filterFunction = filterFunction;
+		this.assertBranchMatches([this._1, this._3, this._4, this._5]);
+		this.clearDispatchedEvents();
 
 		var itemToAdd = new MockItem("New Item", 100);
-		var originalFilteredLength = this._collection.getLength();
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.set([originalFilteredLength], itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after setting item after end of collection");
-		Assert.isTrue(addItemEvent, "HierarchicalCollectionEvent.ADD_ITEM must be dispatched after setting item after end of collection");
-		Assert.isFalse(replaceItemEvent, "HierarchicalCollectionEvent.REPLACE_ITEM must not be dispatched after setting item after end of collection");
-		Assert.equals(originalFilteredLength + 1, this._collection.getLength(), "Collection length must change after setting item after end of collection");
-		Assert.isTrue(locationsMatch([originalFilteredLength], this._collection.locationOf(itemToAdd)),
+		this._collection.set([4], itemToAdd);
+		this.assertBranchMatches([this._1, this._3, this._4, this._5, itemToAdd]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [4], addedItem: itemToAdd},
+			{type: Event.CHANGE}
+		]);
+		Assert.isTrue(locationsMatch([4], this._collection.locationOf(itemToAdd)),
 			"Setting item after end of collection returns incorrect location");
-		Assert.isTrue(locationsMatch([originalFilteredLength], locationFromEvent), "Setting item after end of collection returns incorrect location in event");
 
 		this._collection.filterFunction = null;
-
-		Assert.equals(preFilteredLength + 1, this._collection.getLength(),
-			"Collection length must change after setting item after end of collection (and filter is removed)");
-		Assert.isTrue(locationsMatch([preFilteredLength], this._collection.locationOf(itemToAdd)),
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, this._5, itemToAdd]);
+		Assert.isTrue(locationsMatch([5], this._collection.locationOf(itemToAdd)),
 			"Setting item after end of collection returns incorrect location");
 	}
 
 	public function testSetWithFilterFunctionAndNoMatch():Void {
-		var preFilteredLength = this._collection.getLength();
-
 		this._collection.filterFunction = filterFunction;
+		this.assertBranchMatches([this._1, this._3, this._4, this._5]);
+		this.clearDispatchedEvents();
 
 		var itemToAdd = new MockItem(TEXT_FILTER_ME, 100);
-		var originalFilteredLength = this._collection.getLength();
-		var expectedIndex = 3;
-		var expectedUnfilteredIndex = 4;
-		var changeEvent = false;
-		this._collection.addEventListener(Event.CHANGE, function(event:Event):Void {
-			changeEvent = true;
-		});
-		var addItemEvent = false;
-		var replaceItemEvent = false;
-		var removeItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.set([expectedIndex], itemToAdd);
-		Assert.isTrue(changeEvent, "Event.CHANGE must be dispatched after setting item that is filtered");
-		Assert.isFalse(addItemEvent, "HierarchicalCollectionEvent.ADD_ITEM must not be dispatched after setting item that is filtered");
-		Assert.isFalse(replaceItemEvent, "HierarchicalCollectionEvent.REPLACE_ITEM must not be dispatched after setting item after end of collection");
-		Assert.isTrue(removeItemEvent, "HierarchicalCollectionEvent.REMOVE_ITEM must be dispatched after setting item that is filtered");
-		Assert.equals(originalFilteredLength - 1, this._collection.getLength(), "Collection length must change after setting item that is filtered");
+		this._collection.set([3], itemToAdd);
+		this.assertBranchMatches([this._1, this._3, this._4]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [3], addedItem: null, removedItem: this._5},
+			{type: Event.CHANGE}
+		]);
 		Assert.isNull(this._collection.locationOf(itemToAdd), "Setting item that is filtered returns incorrect location");
-		Assert.isTrue(locationsMatch([expectedIndex], locationFromEvent), "Setting item that is filtered returns incorrect location in event");
 
 		this._collection.filterFunction = null;
-
-		Assert.equals(preFilteredLength, this._collection.getLength(),
-			"Collection length must not change after setting item that is filtered (and filter is removed)");
-		Assert.isTrue(locationsMatch([expectedUnfilteredIndex], this._collection.locationOf(itemToAdd)),
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, itemToAdd]);
+		Assert.isTrue(locationsMatch([4], this._collection.locationOf(itemToAdd)),
 			"Setting item after end of collection returns incorrect location");
 	}
 
@@ -775,7 +612,7 @@ import utest.Test;
 			}
 			return location[0] % 2 == 0;
 		};
-		this._collection.get([0]);
+		this.assertBranchMatches([this._1, this._3, this._5]);
 		this._collection.filterFunction = (item:MockItem) -> {
 			var location = this._collection.locationOf(item);
 			Assert.notNull(location, "Collection with filterFunction must not return null for location during filtering");
@@ -784,7 +621,7 @@ import utest.Test;
 			}
 			return location[0] % 2 == 0;
 		};
-		this._collection.get([0]);
+		this.assertBranchMatches([this._1, this._3, this._5]);
 	}
 
 	public function testChangeSourceWithFilterFunction():Void {
@@ -795,107 +632,61 @@ import utest.Test;
 			}
 			return location[0] % 2 == 0;
 		};
-		Assert.equals(3, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]));
-		Assert.equals(this._3, this._collection.get([1]));
-		Assert.equals(this._5, this._collection.get([2]));
+		this.assertBranchMatches([this._1, this._3, this._5]);
 
 		var new1 = new MockItem("New Item 1", 101);
 		var new2 = new MockItem("New Item 2", 102);
 		this._collection.array = [new1, new2];
-
-		Assert.equals(1, this._collection.getLength());
-		Assert.equals(new1, this._collection.get([0]));
-		Assert.isTrue(locationsMatch([0], this._collection.locationOf(new1)));
-		Assert.isNull(this._collection.locationOf(new2));
-		Assert.isFalse(this._collection.contains(this._1));
-		Assert.isFalse(this._collection.contains(this._2));
-		Assert.isFalse(this._collection.contains(this._3));
-		Assert.isFalse(this._collection.contains(this._4));
-		Assert.isFalse(this._collection.contains(this._5));
+		this.assertBranchMatches([new1]);
 	}
 
 	public function testUpdateAtWithFilterFunction():Void {
 		this._collection.filterFunction = (item:MockItem) -> {
 			return item.value > 1 && item.value < 5;
 		};
-		Assert.equals(3, this._collection.getLength());
-		Assert.equals(this._2, this._collection.get([0]));
-		Assert.equals(this._3, this._collection.get([1]));
-		Assert.equals(this._5, this._collection.get([2]));
+		this.assertBranchMatches([this._2, this._3, this._5]);
 
 		this._3.value = 100;
-		this._collection.updateAt([0]);
-
-		Assert.equals(2, this._collection.getLength());
-		Assert.equals(this._2, this._collection.get([0]));
-		Assert.equals(this._5, this._collection.get([1]));
-		Assert.isFalse(this._collection.contains(this._1));
-		Assert.isTrue(this._collection.contains(this._2));
-		Assert.isFalse(this._collection.contains(this._3));
-		Assert.isFalse(this._collection.contains(this._4));
-		Assert.isTrue(this._collection.contains(this._5));
+		this._collection.updateAt([1]);
+		this.assertBranchMatches([this._2, this._5]);
 	}
 
 	public function testUpdateAllWithFilterFunction():Void {
 		this._collection.filterFunction = (item:MockItem) -> {
 			return item.value > 1 && item.value < 5;
 		};
-		Assert.equals(3, this._collection.getLength());
-		Assert.equals(this._2, this._collection.get([0]));
-		Assert.equals(this._3, this._collection.get([1]));
-		Assert.equals(this._5, this._collection.get([2]));
+		this.assertBranchMatches([this._2, this._3, this._5]);
 
 		this._1.value = 4;
 		this._3.value = 100;
 		this._collection.updateAll();
-
-		Assert.equals(3, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]));
-		Assert.equals(this._2, this._collection.get([1]));
-		Assert.equals(this._5, this._collection.get([2]));
-		Assert.isTrue(this._collection.contains(this._1));
-		Assert.isTrue(this._collection.contains(this._2));
-		Assert.isFalse(this._collection.contains(this._3));
-		Assert.isFalse(this._collection.contains(this._4));
-		Assert.isTrue(this._collection.contains(this._5));
+		this.assertBranchMatches([this._1, this._2, this._5]);
 	}
 
 	//--- sortCompareFunction
 
 	public function testSortCompareFunction():Void {
 		this._collection.sortCompareFunction = sortCompareFunction;
-		Assert.equals(this._collection.array.length, this._collection.getLength(), "Collection length must not change if sorted");
-		Assert.equals(this._1, this._collection.get([0]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._1b, this._collection.get([0, 0]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._1a, this._collection.get([0, 1]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._1c, this._collection.get([0, 2]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._4, this._collection.get([1]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._4b, this._collection.get([1, 0]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._4a, this._collection.get([1, 1]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._2, this._collection.get([2]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._2a, this._collection.get([2, 0]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._3, this._collection.get([3]), "Collection order is incorrect with sortCompareFunction");
-		Assert.equals(this._5, this._collection.get([4]), "Collection order is incorrect with sortCompareFunction");
+		this.assertBranchMatches([this._1, this._4, this._2, this._3, this._5]);
+		this.assertBranchMatches([this._1b, this._1a, this._1c], [0]);
+		this.assertBranchMatches([this._1bi], [0, 0]);
+		this.assertBranchMatches([this._4b, this._4a], [1]);
+		this.assertBranchMatches([this._2a], [2]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.SORT_CHANGE},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testSetSortCompareFunctionToNull():Void {
 		this._collection.sortCompareFunction = sortCompareFunction;
-		// get an item so that we know the sorting was applied
-		Assert.equals(this._4, this._collection.get([1]), "Collection order is incorrect with sortCompareFunction");
+		this.assertBranchMatches([this._1, this._4, this._2, this._3, this._5]);
 
 		this._collection.sortCompareFunction = null;
-		Assert.equals(this._1, this._collection.get([0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._1a, this._collection.get([0, 0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._1b, this._collection.get([0, 1]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._1c, this._collection.get([0, 2]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._2, this._collection.get([1]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._2a, this._collection.get([1, 0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._3, this._collection.get([2]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._4, this._collection.get([3]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._4a, this._collection.get([3, 0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._4b, this._collection.get([3, 1]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._5, this._collection.get([4]), "Collection order is incorrect after setting sortCompareFunction to null");
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, this._5]);
+		this.assertBranchMatches([this._1a, this._1b, this._1c], [0]);
+		this.assertBranchMatches([this._2a], [1]);
+		this.assertBranchMatches([this._4a, this._4b], [3]);
 	}
 
 	public function testLocationOfWithSortCompareFunction():Void {
@@ -932,206 +723,88 @@ import utest.Test;
 	}
 
 	public function testAddAtWithSortCompareFunction():Void {
-		var newItem = new MockItem("New Item", 1.5);
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.addAt(newItem, [1]);
+		this.assertBranchMatches([this._1, this._4, this._2, this._3, this._5]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(addItemEvent);
-		Assert.isTrue(locationsMatch([2], locationFromEvent));
-		Assert.equals(6, this._collection.getLength());
-		// the index we passed in isn't necessarily the same while sorted
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 0");
-		Assert.equals(this._4, this._collection.get([1]), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 1");
-		Assert.equals(newItem, this._collection.get([2]), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 2");
-		Assert.equals(this._2, this._collection.get([3]), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 3");
-		Assert.equals(this._3, this._collection.get([4]), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 4");
-		Assert.equals(this._5, this._collection.get([5]), "Collection with sortCompareFunction and addAt() did not return correct item for sorted index 5");
+		var newItem = new MockItem("New Item", 1.5);
+		this._collection.addAt(newItem, [1]);
+		this.assertBranchMatches([this._1, this._4, newItem, this._2, this._3, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [2], addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(6, this._collection.getLength());
-		// and it might not even be the same while unsorted!
-		// that's because, in the unsorted data, it will be placed relative to
-		// the item in the sorted data that was at the index passed to addAt().
-		// it may be confusing, but it's consistent with set() on filtered
-		// collections
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and addAt() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]), "Collection with sortCompareFunction and addAt() did not return correct item for unsorted index 1");
-		Assert.equals(this._3, this._collection.get([2]), "Collection with sortCompareFunction and addAt() did not return correct item for unsorted index 2");
-		Assert.equals(newItem, this._collection.get([3]), "Collection with sortCompareFunction and addAt() did not return correct item for unsorted index 3");
-		Assert.equals(this._4, this._collection.get([4]), "Collection with sortCompareFunction and addAt() did not return correct item for unsorted index 4");
-		Assert.equals(this._5, this._collection.get([5]), "Collection with sortCompareFunction and addAt() did not return correct item for unsorted index 5");
+		// newItem was inserted before this._4 because this._4 was at [1]
+		this.assertBranchMatches([this._1, this._2, this._3, newItem, this._4, this._5]);
 	}
 
 	public function testRemoveWithSortCompareFunction():Void {
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var removeItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.remove(this._2);
+		this.assertBranchMatches([this._1, this._4, this._2, this._3, this._5]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(removeItemEvent);
-		Assert.isTrue(locationsMatch([2], locationFromEvent));
-		Assert.equals(4, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 0");
-		Assert.equals(this._4, this._collection.get([1]), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 1");
-		Assert.equals(this._3, this._collection.get([2]), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 2");
-		Assert.equals(this._5, this._collection.get([3]), "Collection with sortCompareFunction and remove() did not return correct item for sorted index 3");
+		this._collection.remove(this._2);
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [2], removedItem: this._2},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(4, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and remove() did not return correct item for unsorted index 0");
-		Assert.equals(this._3, this._collection.get([1]), "Collection with sortCompareFunction and remove() did not return correct item for unsorted index 1");
-		Assert.equals(this._4, this._collection.get([2]), "Collection with sortCompareFunction and remove() did not return correct item for unsorted index 2");
-		Assert.equals(this._5, this._collection.get([3]), "Collection with sortCompareFunction and remove() did not return correct item for unsorted index 3");
+		this.assertBranchMatches([this._1, this._3, this._4, this._5]);
 	}
 
 	public function testRemoveAtWithSortCompareFunction():Void {
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var removeItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.removeAt([2]);
+		this.assertBranchMatches([this._1, this._4, this._2, this._3, this._5]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(removeItemEvent);
-		Assert.isTrue(locationsMatch([2], locationFromEvent));
-		Assert.equals(4, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 0");
-		Assert.equals(this._4, this._collection.get([1]), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 1");
-		Assert.equals(this._3, this._collection.get([2]), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 2");
-		Assert.equals(this._5, this._collection.get([3]), "Collection with sortCompareFunction and removeAt() did not return correct item for sorted index 3");
+		this._collection.removeAt([2]);
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [2], removedItem: this._2},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(4, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and removeAt() did not return correct item for unsorted index 0");
-		Assert.equals(this._3, this._collection.get([1]),
-			"Collection with sortCompareFunction and removeAt() did not return correct item for unsorted index 1");
-		Assert.equals(this._4, this._collection.get([2]),
-			"Collection with sortCompareFunction and removeAt() did not return correct item for unsorted index 2");
-		Assert.equals(this._5, this._collection.get([3]),
-			"Collection with sortCompareFunction and removeAt() did not return correct item for unsorted index 3");
+		this.assertBranchMatches([this._1, this._3, this._4, this._5]);
 	}
 
 	public function testSetWithSortCompareFunction_sortedLocationUnchanged():Void {
-		var newItem = new MockItem("New Item", 1.5);
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var removeItemEvent = false;
-		var replaceItemEvent = false;
-		var addLocationFromEvent:Array<Int> = null;
-		var removeLocationFromEvent:Array<Int> = null;
-		var replaceLocationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			addLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			removeLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			replaceLocationFromEvent = event.location;
-		});
-		this._collection.set([1], newItem);
+		this.assertBranchMatches([this._1, this._4, this._2, this._3, this._5]);
+		this.clearDispatchedEvents();
 
-		Assert.isFalse(addItemEvent);
-		Assert.isFalse(removeItemEvent);
-		Assert.isTrue(replaceItemEvent);
-		Assert.isNull(addLocationFromEvent);
-		Assert.isNull(removeLocationFromEvent);
-		Assert.isTrue(locationsMatch([1], replaceLocationFromEvent));
-		Assert.equals(5, this._collection.getLength());
-		// the index we passed in isn't necessarily the same while sorted
-		Assert.isFalse(this._collection.contains(this._4), "Collection with sortCompareFunction and set() did not remove correct item for sorted index");
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 0");
-		Assert.equals(newItem, this._collection.get([1]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 1");
-		Assert.equals(this._2, this._collection.get([2]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 2");
-		Assert.equals(this._3, this._collection.get([3]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 3");
-		Assert.equals(this._5, this._collection.get([4]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 4");
+		var newItem = new MockItem("New Item", 1.5);
+		this._collection.set([1], newItem);
+		this.assertBranchMatches([this._1, newItem, this._2, this._3, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REPLACE_ITEM, location: [1], addedItem: newItem, removedItem: this._4},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(5, this._collection.getLength());
-		// and it might not even be the same while unsorted!
-		// that's because, in the unsorted data, it will replace the item in the
-		// the sorted data that was at the index passed to set().
-		// it may be confusing, but it's consistent with set() on filtered
-		// collections
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 1");
-		Assert.equals(this._3, this._collection.get([2]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 2");
-		Assert.equals(newItem, this._collection.get([3]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 3");
-		Assert.equals(this._5, this._collection.get([4]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 4");
+		this.assertBranchMatches([this._1, this._2, this._3, newItem, this._5]);
 	}
 
 	public function testSetWithSortCompareFunction_sortedLocationChanged():Void {
-		var newItem = new MockItem("New Item", 1.5);
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var removeItemEvent = false;
-		var replaceItemEvent = false;
-		var addLocationFromEvent:Array<Int> = null;
-		var removeLocationFromEvent:Array<Int> = null;
-		var replaceLocationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			addLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			removeLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			replaceLocationFromEvent = event.location;
-		});
+		this.assertBranchMatches([this._1, this._4, this._2, this._3, this._5]);
+		this.clearDispatchedEvents();
+
+		var newItem = new MockItem("New Item", 1.5);
 		this._collection.set([3], newItem);
-
-		Assert.isTrue(addItemEvent);
-		Assert.isTrue(removeItemEvent);
-		Assert.isFalse(replaceItemEvent);
-		Assert.isTrue(locationsMatch([2], addLocationFromEvent));
-		Assert.isTrue(locationsMatch([3], removeLocationFromEvent));
-		Assert.isNull(replaceLocationFromEvent);
-		Assert.equals(5, this._collection.getLength());
-
-		// the index we passed in isn't necessarily the same while sorted
-		Assert.isFalse(this._collection.contains(this._3), "Collection with sortCompareFunction and set() did not remove correct item for sorted index");
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 0");
-		Assert.equals(this._4, this._collection.get([1]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 1");
-		Assert.equals(newItem, this._collection.get([2]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 2");
-		Assert.equals(this._2, this._collection.get([3]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 3");
-		Assert.equals(this._5, this._collection.get([4]), "Collection with sortCompareFunction and set() did not return correct item for sorted index 4");
+		this.assertBranchMatches([this._1, this._4, newItem, this._2, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [3], removedItem: this._3},
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [2], addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(5, this._collection.getLength());
-		// and it might not even be the same while unsorted!
-		// that's because, in the unsorted data, it will replace the item in the
-		// the sorted data that was at the index passed to set().
-		// it may be confusing, but it's consistent with set() on filtered
-		// collections
-		Assert.equals(this._1, this._collection.get([0]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 1");
-		Assert.equals(newItem, this._collection.get([2]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 2");
-		Assert.equals(this._4, this._collection.get([3]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 3");
-		Assert.equals(this._5, this._collection.get([4]), "Collection with sortCompareFunction and set() did not return correct item for unsorted index 4");
+		this.assertBranchMatches([this._1, this._2, newItem, this._4, this._5]);
 	}
 
 	//--- sortCompareFunction AND filterFunction
@@ -1139,37 +812,39 @@ import utest.Test;
 	public function testSortCompareFunctionAndFilterFunction():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		Assert.notEquals(this._collection.array.length, this._collection.getLength(), "Collection length must not match source length if items are filtered");
-		Assert.equals(4, this._collection.getLength(), "Collection length must account for filterFunction");
-		Assert.equals(this._1, this._collection.get([0]), "Items must be filtered and sorted");
-		Assert.equals(this._1a, this._collection.get([0, 0]), "Items must be filtered and sorted");
-		Assert.equals(this._1c, this._collection.get([0, 1]), "Items must be filtered and sorted");
-		Assert.equals(this._4, this._collection.get([1]), "Items must be filtered and sorted");
-		Assert.equals(this._4b, this._collection.get([1, 0]), "Items must be filtered and sorted");
-		Assert.equals(this._4a, this._collection.get([1, 1]), "Items must be filtered and sorted");
-		Assert.equals(this._3, this._collection.get([2]), "Items must be filtered and sorted");
-		Assert.equals(this._5, this._collection.get([3]), "Items must be filtered and sorted");
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.assertBranchMatches([this._1a, this._1c], [0]);
+		this.assertBranchMatches([this._4b, this._4a], [1]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE},
+			{type: HierarchicalCollectionEvent.SORT_CHANGE},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testSetSortCompareFunctionAndFilterFunctionToNull():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		// get an item so that we know the sorting was applied
-		Assert.equals(this._4, this._collection.get([1]), "Collection order is incorrect with sortCompareFunction");
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-		Assert.equals(this._1, this._collection.get([0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._1a, this._collection.get([0, 0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._1b, this._collection.get([0, 1]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._1c, this._collection.get([0, 2]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._2, this._collection.get([1]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._2a, this._collection.get([1, 0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._3, this._collection.get([2]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._4, this._collection.get([3]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._4a, this._collection.get([3, 0]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._4b, this._collection.get([3, 1]), "Collection order is incorrect after setting sortCompareFunction to null");
-		Assert.equals(this._5, this._collection.get([4]), "Collection order is incorrect after setting sortCompareFunction to null");
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, this._5]);
+		this.assertBranchMatches([this._1a, this._1b, this._1c], [0]);
+		this.assertBranchMatches([this._2a], [1]);
+		this.assertBranchMatches([this._4a, this._4b], [3]);
+
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE},
+			{type: HierarchicalCollectionEvent.SORT_CHANGE},
+			{type: Event.CHANGE},
+			{type: HierarchicalCollectionEvent.FILTER_CHANGE},
+			{type: Event.CHANGE},
+			{type: HierarchicalCollectionEvent.SORT_CHANGE},
+			{type: Event.CHANGE}
+		]);
 	}
 
 	public function testContainsWithSortCompareFunctionAndFilterFunction():Void {
@@ -1207,255 +882,98 @@ import utest.Test;
 	}
 
 	public function testAddAtWithSortCompareFunctionAndFilterFunction():Void {
-		var newItem = new MockItem("New Item", 1.5);
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.addAt(newItem, [1]);
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(addItemEvent);
-		Assert.isTrue(locationsMatch([2], locationFromEvent));
-		Assert.equals(5, this._collection.getLength());
-		// the index we passed in isn't necessarily the same while sorted
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 0");
-		Assert.equals(this._4, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 1");
-		Assert.equals(newItem, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 2");
-		Assert.equals(this._3, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 3");
-		Assert.equals(this._5, this._collection.get([4]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for sorted index 4");
+		var newItem = new MockItem("New Item", 1.5);
+		this._collection.addAt(newItem, [1]);
+		this.assertBranchMatches([this._1, this._4, newItem, this._3, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [2], addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(6, this._collection.getLength());
-		// and it might not even be the same while unsorted!
-		// that's because, in the unsorted data, it will be placed relative to
-		// the item in the sorted data that was at the index passed to addAt().
-		// it may be confusing, but it's consistent with set() on filtered
-		// collections
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 1");
-		Assert.equals(this._3, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 2");
-		Assert.equals(newItem, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 3");
-		Assert.equals(this._4, this._collection.get([4]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 4");
-		Assert.equals(this._5, this._collection.get([5]),
-			"Collection with sortCompareFunction and filterFunction with addAt() did not return correct item for unsorted index 5");
+		// newItem was inserted before this._4 because this._4 was at [1]
+		this.assertBranchMatches([this._1, this._2, this._3, newItem, this._4, this._5]);
 	}
 
 	public function testRemoveWithSortCompareFunctionAndFilterFunction():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var removeItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.remove(this._3);
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(removeItemEvent);
-		Assert.isTrue(locationsMatch([2], locationFromEvent));
-		Assert.equals(3, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for sorted index 0");
-		Assert.equals(this._4, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for sorted index 1");
-		Assert.equals(this._5, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for sorted index 2");
+		this._collection.remove(this._3);
+		this.assertBranchMatches([this._1, this._4, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [2], removedItem: this._3},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(4, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for unsorted index 1");
-		Assert.equals(this._4, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for unsorted index 2");
-		Assert.equals(this._5, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with remove() did not return correct item for unsorted index 3");
+		this.assertBranchMatches([this._1, this._2, this._4, this._5]);
 	}
 
 	public function testRemoveAtWithSortCompareFunctionAndFilterFunction():Void {
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var removeItemEvent = false;
-		var locationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			locationFromEvent = event.location;
-		});
-		this._collection.removeAt([2]);
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.clearDispatchedEvents();
 
-		Assert.isTrue(removeItemEvent);
-		Assert.isTrue(locationsMatch([2], locationFromEvent));
-		Assert.equals(3, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for sorted index 0");
-		Assert.equals(this._4, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for sorted index 1");
-		Assert.equals(this._5, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for sorted index 2");
+		this._collection.removeAt([2]);
+		this.assertBranchMatches([this._1, this._4, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [2], removedItem: this._3},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(4, this._collection.getLength());
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for unsorted index 1");
-		Assert.equals(this._4, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for unsorted index 2");
-		Assert.equals(this._5, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with removeAt() did not return correct item for unsorted index 3");
+		this.assertBranchMatches([this._1, this._2, this._4, this._5]);
 	}
 
 	public function testSetWithSortCompareFunctionAndFilterFunction():Void {
-		var newItem = new MockItem("New Item", 0.5);
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var removeItemEvent = false;
-		var replaceItemEvent = false;
-		var addLocationFromEvent:Array<Int> = null;
-		var removeLocationFromEvent:Array<Int> = null;
-		var replaceLocationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			addLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			removeLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			replaceLocationFromEvent = event.location;
-		});
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.clearDispatchedEvents();
+
+		var newItem = new MockItem("New Item", 0.5);
 		this._collection.set([2], newItem);
-
-		Assert.isTrue(addItemEvent);
-		Assert.isTrue(removeItemEvent);
-		Assert.isFalse(replaceItemEvent);
-		Assert.isTrue(locationsMatch([1], addLocationFromEvent));
-		Assert.isTrue(locationsMatch([2], removeLocationFromEvent));
-		Assert.isNull(replaceLocationFromEvent);
-		Assert.equals(4, this._collection.getLength());
-
-		// the index we passed in isn't necessarily the same while sorted
-		Assert.isFalse(this._collection.contains(this._3),
-			"Collection with sortCompareFunction and filterFunction with set() did not remove correct item for sorted index");
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 0");
-		Assert.equals(newItem, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 1");
-		Assert.equals(this._4, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 2");
-		Assert.equals(this._5, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 3");
+		this.assertBranchMatches([this._1, newItem, this._4, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.REMOVE_ITEM, location: [2], removedItem: this._3},
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [1], addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(5, this._collection.getLength());
-		// and it might not even be the same while unsorted!
-		// that's because, in the unsorted data, it will replace the item in the
-		// the sorted data that was at the index passed to set().
-		// it may be confusing, but it's consistent with set() on filtered
-		// collections
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 1");
-		Assert.equals(newItem, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 2");
-		Assert.equals(this._4, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 3");
-		Assert.equals(this._5, this._collection.get([4]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 4");
+		this.assertBranchMatches([this._1, this._2, newItem, this._4, this._5]);
 	}
 
 	public function testSetWithSortCompareFunctionAndFilterFunctionAfterLast():Void {
-		var newItem = new MockItem("New Item", 0.5);
 		this._collection.filterFunction = filterFunction;
 		this._collection.sortCompareFunction = sortCompareFunction;
-		var addItemEvent = false;
-		var removeItemEvent = false;
-		var replaceItemEvent = false;
-		var addLocationFromEvent:Array<Int> = null;
-		var removeLocationFromEvent:Array<Int> = null;
-		var replaceLocationFromEvent:Array<Int> = null;
-		this._collection.addEventListener(HierarchicalCollectionEvent.ADD_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			addItemEvent = true;
-			addLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REMOVE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			removeItemEvent = true;
-			removeLocationFromEvent = event.location;
-		});
-		this._collection.addEventListener(HierarchicalCollectionEvent.REPLACE_ITEM, function(event:HierarchicalCollectionEvent):Void {
-			replaceItemEvent = true;
-			replaceLocationFromEvent = event.location;
-		});
+		this.assertBranchMatches([this._1, this._4, this._3, this._5]);
+		this.clearDispatchedEvents();
+
+		var newItem = new MockItem("New Item", 0.5);
 		this._collection.set([4], newItem);
-
-		Assert.isTrue(addItemEvent);
-		Assert.isFalse(removeItemEvent);
-		Assert.isFalse(replaceItemEvent);
-		Assert.isTrue(locationsMatch([1], addLocationFromEvent));
-		Assert.isNull(removeLocationFromEvent);
-		Assert.isNull(replaceLocationFromEvent);
-		Assert.equals(5, this._collection.getLength());
-
-		// the index we passed in isn't necessarily the same while sorted
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 0");
-		Assert.equals(newItem, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 1");
-		Assert.equals(this._4, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 2");
-		Assert.equals(this._3, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 3");
-		Assert.equals(this._5, this._collection.get([4]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for sorted index 4");
+		this.assertBranchMatches([this._1, newItem, this._4, this._3, this._5]);
+		this.assertEventsDispatched([
+			{type: HierarchicalCollectionEvent.ADD_ITEM, location: [1], addedItem: newItem},
+			{type: Event.CHANGE}
+		]);
 
 		this._collection.filterFunction = null;
 		this._collection.sortCompareFunction = null;
-
-		Assert.equals(6, this._collection.getLength());
-		// and it might not even be the same while unsorted!
-		// that's because, in the unsorted data, it will replace the item in the
-		// the sorted data that was at the index passed to set().
-		// it may be confusing, but it's consistent with set() on filtered
-		// collections
-		Assert.equals(this._1, this._collection.get([0]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 0");
-		Assert.equals(this._2, this._collection.get([1]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 1");
-		Assert.equals(this._3, this._collection.get([2]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 2");
-		Assert.equals(this._4, this._collection.get([3]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 3");
-		Assert.equals(this._5, this._collection.get([4]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 4");
-		Assert.equals(newItem, this._collection.get([5]),
-			"Collection with sortCompareFunction and filterFunction with set() did not return correct item for unsorted index 5");
+		this.assertBranchMatches([this._1, this._2, this._3, this._4, this._5, newItem]);
 	}
 }
 
