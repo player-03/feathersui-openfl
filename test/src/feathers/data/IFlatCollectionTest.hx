@@ -800,17 +800,3 @@ class IFlatCollectionTest extends Test {
 		this.assertCollectionMatches([this._a, this._b, this._c, this._d, newItem]);
 	}
 }
-
-class MockItem {
-	public function new(text:String, value:Float) {
-		this.text = text;
-		this.value = value;
-	}
-
-	public var text:String;
-	public var value:Float;
-
-	public function toString():String {
-		return 'MockItem("${this.text}", ${this.value})';
-	}
-}

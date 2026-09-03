@@ -8,7 +8,6 @@
 
 package feathers.data;
 
-import feathers.data.IFlatCollectionTest.MockItem;
 import feathers.events.FlatCollectionEvent;
 import openfl.events.Event;
 import utest.Assert;
